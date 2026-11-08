@@ -5,7 +5,7 @@
   bottom: calc(72px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   padding: 10px 12px;
   border-radius: 18px;
   background: var(--surface); /* 흰 악보 위에서도 버튼이 묻히지 않게 불투명 */
@@ -13,10 +13,17 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
+.mini-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
 .mini-beats {
   display: flex;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .mini-beat {
@@ -44,15 +51,36 @@
   max-width: 520px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: auto auto 1fr auto auto 56px;
+  /* 가운데(점 + BPM)가 정확히 한가운데 오도록 양쪽을 같은 너비로 */
+  grid-template-columns: 48px 48px 1fr 48px 48px;
   align-items: center;
   gap: 6px;
+}
+
+.mini-row {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mini-slider {
+  flex: 1;
+  min-width: 0;
+  accent-color: var(--accent);
+  height: 32px;
 }
 
 /* 카드 배경과 구분되도록 메트로놈 탭 버튼보다 한 단계 밝게 */
 .mini-step {
   height: 44px;
   min-width: 44px;
+  touch-action: none; /* 누르고 있을 때 스크롤·확대로 넘어가지 않게 */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   border-radius: 12px;
   background: var(--line);
   color: var(--text);
@@ -78,11 +106,13 @@
   font-weight: 400;
   color: var(--muted);
   letter-spacing: 0.08em;
-  margin-top: 3px;
+  margin-top: 2px;
 }
 
 .mini-play {
-  height: 48px;
+  flex: none;
+  width: 64px;
+  height: 44px;
   border-radius: 14px;
   background: var(--accent);
   color: #1b1408;
