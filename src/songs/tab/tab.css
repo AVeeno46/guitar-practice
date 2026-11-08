@@ -1,0 +1,240 @@
+.tab-section,
+.tab-create {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tab-create {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px dashed var(--line);
+}
+
+.tab-create h3,
+.tab-toolbar h3 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.tab-create p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.tab-option-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.tab-option-row .scale-row-title {
+  width: 64px;
+}
+
+.tab-help {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.tab-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tab-options,
+.tab-barops {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab-selinfo {
+  flex-basis: 100%;
+  font-size: 13px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.loop-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding: 2px 4px 2px 10px;
+  border-radius: 12px;
+  background: rgba(122, 167, 224, 0.18);
+  color: #9cc0ee;
+  font-size: 13px;
+}
+
+.loop-chip button {
+  width: 22px;
+  height: 22px;
+  border-radius: 11px;
+  background: none;
+  color: inherit;
+}
+
+/* ---------- 악보 ---------- */
+
+.tabstaff {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 0;
+  padding: 8px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.tabstaff.editing {
+  border-color: var(--accent);
+}
+
+.tab-loop,
+.tab-selcol,
+.tab-playcol {
+  pointer-events: none;
+}
+
+.tab-loop {
+  fill: rgba(122, 167, 224, 0.14);
+}
+
+.tab-selcol {
+  fill: rgba(232, 163, 61, 0.1);
+}
+
+.tab-selcell {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.tab-playcol {
+  fill: rgba(232, 163, 61, 0.32);
+}
+
+.tab-col.current .tab-fret {
+  fill: #fff;
+}
+
+.tab-hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.tab-barnum rect {
+  fill: transparent;
+}
+
+.tab-barnum text {
+  fill: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tab-barnum.tappable {
+  cursor: pointer;
+}
+
+.tab-barnum.tappable rect {
+  fill: var(--surface-2);
+}
+
+.tab-barnum.in-loop rect {
+  fill: rgba(122, 167, 224, 0.35);
+}
+
+.tab-barnum.in-loop text {
+  fill: #cfe0f6;
+  font-weight: 700;
+}
+
+.tab-barcont {
+  fill: var(--muted);
+  font-size: 10px;
+}
+
+/* ---------- 입력 패드 (편집 중 아래에 붙음) ---------- */
+
+.tab-pad {
+  position: sticky;
+  bottom: calc(72px + env(safe-area-inset-bottom));
+  z-index: 5;
+  padding: 10px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.pad-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.pad-key {
+  height: 46px;
+  border-radius: 12px;
+  background: var(--line);
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  touch-action: manipulation;
+}
+
+.pad-key:active {
+  transform: scale(0.95);
+}
+
+.pad-key.action {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.pad-key:disabled {
+  opacity: 0.35;
+}
+
+.pad-key.nav {
+  background: var(--surface-2);
+  font-size: 18px;
+}
+
+.pad-key.nav.wide {
+  grid-column: span 2;
+  background: var(--accent);
+  color: #1b1408;
+}
+
+.pad-key.toggle {
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 500;
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1.5px solid transparent;
+}
+
+.pad-key.toggle.on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+@media (min-width: 900px) {
+  .tab-pad {
+    bottom: 16px;
+  }
+}

@@ -76,6 +76,7 @@ export default function SongEditor({ song, onCancel, onSaved, onDeleted }: Props
       targetBpm,
       memo: memo.trim(),
       sheets: sheets.map((s) => s.meta),
+      tab: song?.tab ?? null, // 편집 폼에 없는 TAB 악보는 그대로 둔다
       bpmLog: song?.bpmLog ?? [{ date: todayKey(), bpm: practiceBpm }],
       createdAt: song?.createdAt ?? now,
       updatedAt: now,

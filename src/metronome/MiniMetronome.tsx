@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { clampBpm, type MetronomeSettings, type Subdivision } from './engine';
+import { clampBpm, type MetronomeSettings, type ScheduleListener, type Subdivision } from './engine';
 import { loadMetronomeSettings, useMetronome } from './useMetronome';
 import './mini.css';
 
@@ -12,6 +12,12 @@ interface Props {
   subdivision?: Subdivision;
   /** 소리가 날 때마다 몇 번째 소리인지 알려준다 (정지하면 -1) */
   onTick?: (index: number, settings: MetronomeSettings) => void;
+  /** 한 마디 박 수. 주면 메트로놈 탭 설정 대신 이 값을 쓴다 (TAB 악보의 박자) */
+  beatsPerBar?: number;
+  /** false면 클릭 소리를 끈다 (TAB 소리만 듣고 싶을 때) */
+  click?: boolean;
+  /** 소리를 예약할 때마다 불린다 (TAB 음을 같은 시계에 맞춰 예약) */
+  onSchedule?: ScheduleListener;
 }
 
 // 슬라이더는 자주 쓰는 범위만: 폭이 좁은 폰에서도 1~2 BPM 단위로 움직이게
@@ -27,13 +33,28 @@ const HOLD_REPEAT_MS = 90; // 이 간격으로 반복
  * ± 버튼은 누르고 있으면 계속 바뀌고, 슬라이더로 크게 옮길 수 있다.
  * PC에서는 스페이스바로 시작/정지.
  */
-export default function MiniMetronome({ bpm, onBpmChange, label = 'BPM', subdivision, onTick }: Props) {
+export default function MiniMetronome({
+  bpm,
+  onBpmChange,
+  label = 'BPM',
+  subdivision,
+  onTick,
+  beatsPerBar,
+  click = true,
+  onSchedule,
+}: Props) {
   const [base] = useState(loadMetronomeSettings);
   const settings = useMemo(
-    () => ({ ...base, bpm, subdivision: subdivision ?? base.subdivision }),
-    [base, bpm, subdivision],
+    () => ({
+      ...base,
+      bpm,
+      subdivision: subdivision ?? base.subdivision,
+      beatsPerBar: beatsPerBar ?? base.beatsPerBar,
+      volume: click ? base.volume : 0,
+    }),
+    [base, bpm, subdivision, beatsPerBar, click],
   );
-  const { running, activeBeat, tickIndex, toggle } = useMetronome(settings);
+  const { running, activeBeat, tickIndex, toggle } = useMetronome(settings, onSchedule);
 
   const onTickRef = useRef(onTick);
   useEffect(() => {

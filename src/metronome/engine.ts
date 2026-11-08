@@ -18,6 +18,9 @@ export interface Tick {
   time: number; // AudioContext 시간
 }
 
+/** 소리를 예약할 때마다 불린다. 같은 오디오 시계에 다른 소리(TAB 음)를 맞춰 예약할 때 쓴다 */
+export type ScheduleListener = (tick: Tick, ctx: AudioContext) => void;
+
 export const BPM_MIN = 30;
 export const BPM_MAX = 300;
 
@@ -35,6 +38,7 @@ export class MetronomeEngine {
   private beat = 0;
   private sub = 0;
   private count = 0;
+  private onSchedule: ScheduleListener | null = null;
   private queue: Tick[] = [];
   private settings: MetronomeSettings;
   running = false;
@@ -89,6 +93,10 @@ export class MetronomeEngine {
   }
 
   /** 지금까지 소리가 난 틱 중 가장 최근 것을 돌려준다(화면 표시용). */
+  setScheduleListener(listener: ScheduleListener | null) {
+    this.onSchedule = listener;
+  }
+
   currentTick(): Tick | null {
     if (!this.ctx) return null;
     const now = this.ctx.currentTime;
@@ -103,7 +111,9 @@ export class MetronomeEngine {
     if (!this.ctx) return;
     while (this.nextTime < this.ctx.currentTime + SCHEDULE_AHEAD_S) {
       this.scheduleClick(this.beat, this.sub, this.nextTime);
-      this.queue.push({ beat: this.beat, sub: this.sub, index: this.count++, time: this.nextTime });
+      const tick = { beat: this.beat, sub: this.sub, index: this.count++, time: this.nextTime };
+      this.queue.push(tick);
+      this.onSchedule?.(tick, this.ctx);
       this.advance();
     }
   }

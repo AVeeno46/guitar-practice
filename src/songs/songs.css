@@ -219,6 +219,13 @@
   gap: 12px;
 }
 
+.sheets-title {
+  margin: 8px 0 0;
+  font-size: 15px;
+  color: var(--muted);
+  font-weight: 600;
+}
+
 .sheet {
   margin: 0;
 }

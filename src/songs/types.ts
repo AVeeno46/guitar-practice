@@ -1,3 +1,5 @@
+import type { TabScore } from './tab/score';
+
 export type SheetKind = 'image' | 'pdf';
 
 /** 악보 파일 정보. 파일 내용(Blob)은 IndexedDB의 sheets 저장소에 따로 둔다. */
@@ -21,6 +23,8 @@ export interface Song {
   targetBpm: number | null;
   memo: string;
   sheets: SheetMeta[];
+  /** 앱에서 직접 만든 TAB 악보 (없으면 null/undefined) */
+  tab?: TabScore | null;
   bpmLog: BpmEntry[];
   createdAt: number;
   updatedAt: number;

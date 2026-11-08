@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { MetronomeEngine, type MetronomeSettings } from './engine';
+import { MetronomeEngine, type MetronomeSettings, type ScheduleListener } from './engine';
 import { loadLocal } from '../storage';
 import { metronomeStarted, metronomeStopped } from '../practice/tracker';
 
@@ -21,8 +21,13 @@ export const loadMetronomeSettings = () =>
  * 메트로놈 엔진을 화면에 연결한다.
  * 설정이 바뀌면 재생 중에도 바로 반영되고, 화면을 떠나면 소리가 멈춘다.
  */
-export function useMetronome(settings: MetronomeSettings) {
+export function useMetronome(settings: MetronomeSettings, onSchedule?: ScheduleListener) {
   const [engine] = useState(() => new MetronomeEngine(settings));
+
+  useEffect(() => {
+    engine.setScheduleListener(onSchedule ?? null);
+    return () => engine.setScheduleListener(null);
+  }, [engine, onSchedule]);
   const [running, setRunning] = useState(false);
   const [activeBeat, setActiveBeat] = useState(-1);
   // 시작한 뒤 몇 번째 소리인지(세분 음 포함). 정지 상태면 -1. 연습 화면의 '지금 칠 음' 표시에 쓴다
