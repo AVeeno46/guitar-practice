@@ -7,6 +7,7 @@ import { progressOf, withPracticeBpm, type Song } from './types';
 import { BPM_MAX } from '../metronome/engine';
 import { loadLocal, saveLocal } from '../storage';
 import SongTab from './tab/SongTab';
+import { exportSong } from './songFile';
 import { barCount, normalizeScore, type TabScore } from './tab/score';
 import { SPEED_STEP, useTabPlayer, type LoopRange, type PlayOptions } from './tab/useTabPlayer';
 
@@ -80,7 +81,7 @@ export default function SongDetail({ song, onBack, onEdit, onChange }: Props) {
     const nextBpm = Math.min(cap, cur.practiceBpm + SPEED_STEP);
     if (nextBpm > cur.practiceBpm) changeBpmRef.current(nextBpm);
   }, [playOptions.speedUp]);
-  const player = useTabPlayer(score, loop, playOptions, onPass);
+  const player = useTabPlayer(score, loop, playOptions, song.practiceBpm, onPass);
 
   const progress = progressOf(song);
   const reached = progress !== null && progress >= 1;
@@ -92,9 +93,14 @@ export default function SongDetail({ song, onBack, onEdit, onChange }: Props) {
         <button className="link-button" onClick={onBack}>
           ‹ 목록
         </button>
-        <button className="link-button" onClick={onEdit}>
-          편집
-        </button>
+        <span className="detail-bar-actions">
+          <button className="link-button" onClick={() => void exportSong(latest.current)}>
+            내보내기
+          </button>
+          <button className="link-button" onClick={onEdit}>
+            편집
+          </button>
+        </span>
       </div>
 
       <div className="detail-head">
@@ -184,6 +190,7 @@ export default function SongDetail({ song, onBack, onEdit, onChange }: Props) {
           click={score ? playOptions.click : true}
           onTick={score ? player.onTick : undefined}
           onSchedule={score ? player.onSchedule : undefined}
+          tempoScale={score ? player.tempoScale : undefined}
         />
       )}
     </section>

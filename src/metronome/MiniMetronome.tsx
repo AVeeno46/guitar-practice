@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { clampBpm, type MetronomeSettings, type ScheduleListener, type Subdivision } from './engine';
+import { clampBpm, type MetronomeSettings, type ScheduleListener, type Subdivision, type TempoScale } from './engine';
 import { loadMetronomeSettings, useMetronome } from './useMetronome';
 import './mini.css';
 
@@ -18,6 +18,8 @@ interface Props {
   click?: boolean;
   /** 소리를 예약할 때마다 불린다 (TAB 음을 같은 시계에 맞춰 예약) */
   onSchedule?: ScheduleListener;
+  /** 소리 번호마다 템포 배율 (TAB 악보 중간 템포 변경) */
+  tempoScale?: TempoScale;
 }
 
 // 슬라이더는 자주 쓰는 범위만: 폭이 좁은 폰에서도 1~2 BPM 단위로 움직이게
@@ -42,6 +44,7 @@ export default function MiniMetronome({
   beatsPerBar,
   click = true,
   onSchedule,
+  tempoScale,
 }: Props) {
   const [base] = useState(loadMetronomeSettings);
   const settings = useMemo(
@@ -54,7 +57,7 @@ export default function MiniMetronome({
     }),
     [base, bpm, subdivision, beatsPerBar, click],
   );
-  const { running, activeBeat, tickIndex, toggle } = useMetronome(settings, onSchedule);
+  const { running, activeBeat, tickIndex, toggle } = useMetronome(settings, onSchedule, tempoScale);
 
   const onTickRef = useRef(onTick);
   useEffect(() => {

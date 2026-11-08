@@ -2,20 +2,40 @@
 // 박을 일정한 칸(리듬 단위)으로 나눈 격자다. 칸 하나 = 메트로놈 세분 소리 하나라서
 // 재생할 때 소리 번호로 바로 칸을 찾을 수 있다.
 //
-// cols[i] 는 6줄짜리 배열: 0 = 6번줄(저음 E) … 5 = 1번줄. null은 그 줄을 안 침.
+// cols[i].notes 는 6줄짜리 배열: 0 = 6번줄(저음 E) … 5 = 1번줄. null은 그 줄을 안 침.
 
 import { TUNING } from '../../scales/theory';
 
 export type NotesPerBeat = 1 | 2 | 3 | 4;
-export type Fret = number | null;
-export type Column = Fret[];
+
+/** 한 줄에 적힌 음 하나 */
+export interface Note {
+  fret: number; // 뮤트(X)면 의미 없음, 이음이면 이어지는 앞 음의 프렛
+  dead?: boolean; // X: 소리 없이 긁는 뮤트음
+  tie?: boolean; // 이음: 앞 음을 다시 치지 않고 계속 울림. (7) 처럼 표시
+  bend?: boolean; // 벤딩(온음 올림) ↑
+  slide?: boolean; // 다음 음까지 미끄러져 감 ／ ＼
+  legato?: boolean; // 다음 음을 피킹 없이 해머링(h)/풀링(p)
+}
+
+export type Cell = Note | null;
+
+export interface Column {
+  notes: Cell[];
+  pm?: boolean; // 팜뮤트 P.M.
+  tempo?: number; // 이 칸부터 템포가 바뀜 (원곡 BPM 기준)
+}
 
 export interface TabScore {
   beatsPerBar: number;
   notesPerBeat: NotesPerBeat;
+  /** 원곡 템포. 연습 BPM이 이 값에 해당하고, 중간 템포 변경은 이 값에 대한 비율로 따라간다 */
+  tempo?: number;
   /** 마디 구분 없이 이어진 칸들. 길이는 항상 한 마디 칸 수의 배수 */
   cols: Column[];
 }
+
+export type NoteFlag = 'dead' | 'tie' | 'bend' | 'slide' | 'legato';
 
 export const MAX_FRET = 24;
 export const STRING_COUNT = 6;
@@ -27,10 +47,14 @@ export const RHYTHM_LABEL: Record<NotesPerBeat, string> = {
   4: '16분음표',
 };
 
-export const emptyColumn = (): Column => Array(STRING_COUNT).fill(null);
+export const emptyColumn = (): Column => ({ notes: Array(STRING_COUNT).fill(null) });
 export const perBar = (s: TabScore) => s.beatsPerBar * s.notesPerBeat;
 export const barCount = (s: TabScore) => s.cols.length / perBar(s);
-export const isEmptyColumn = (c: Column) => c.every((f) => f === null);
+const hasNotes = (c: Column) => c.notes.some((n) => n !== null);
+/** 음도, 팜뮤트도, 템포 표시도 없는 칸 */
+export const isBlankColumn = (c: Column) => !hasNotes(c) && !c.pm && !c.tempo;
+
+const copyColumn = (c: Column): Column => ({ ...c, notes: c.notes.map((n) => (n ? { ...n } : null)) });
 
 export function createScore(beatsPerBar = 4, notesPerBeat: NotesPerBeat = 2, bars = 4): TabScore {
   return {
@@ -42,13 +66,100 @@ export function createScore(beatsPerBar = 4, notesPerBeat: NotesPerBeat = 2, bar
 
 export const midiOf = (string: number, fret: number) => TUNING[string] + fret;
 
+/** col보다 앞에서 이 줄의 가장 가까운 음 (없으면 null) */
+export function prevNote(s: TabScore, col: number, string: number): { col: number; note: Note } | null {
+  for (let i = col - 1; i >= 0; i--) {
+    const n = s.cols[i].notes[string];
+    if (n) return { col: i, note: n };
+  }
+  return null;
+}
+
+/** col보다 뒤에서 이 줄의 가장 가까운 음 (없으면 null) */
+export function nextNote(s: TabScore, col: number, string: number): { col: number; note: Note } | null {
+  for (let i = col + 1; i < s.cols.length; i++) {
+    const n = s.cols[i].notes[string];
+    if (n) return { col: i, note: n };
+  }
+  return null;
+}
+
+/** 이 칸에 적용되는 템포 (원곡 기준). 템포 정보가 없으면 null */
+export function tempoAt(s: TabScore, col: number): number | null {
+  for (let i = Math.min(col, s.cols.length - 1); i >= 0; i--) {
+    const t = s.cols[i].tempo;
+    if (t) return t;
+  }
+  return s.tempo ?? null;
+}
+
 // ---------- 편집 (모두 새 객체를 돌려준다) ----------
 
-export function setFret(s: TabScore, col: number, string: number, fret: Fret): TabScore {
+function withColumn(s: TabScore, col: number, fn: (c: Column) => Column): TabScore {
   const cols = s.cols.slice();
-  cols[col] = cols[col].slice();
-  cols[col][string] = fret;
+  cols[col] = fn(copyColumn(cols[col]));
   return { ...s, cols };
+}
+
+export function setCell(s: TabScore, col: number, string: number, cell: Cell): TabScore {
+  return withColumn(s, col, (c) => {
+    c.notes[string] = cell;
+    return c;
+  });
+}
+
+/** 숫자를 적는다. 이음·X였던 칸은 보통 음으로 바뀌고, 벤딩·슬라이드·레가토 표시는 유지한다 */
+export function setFret(s: TabScore, col: number, string: number, fret: number): TabScore {
+  const old = s.cols[col].notes[string];
+  const keep = old && !old.dead && !old.tie ? { bend: old.bend, slide: old.slide, legato: old.legato } : {};
+  const note: Note = { fret };
+  for (const [k, v] of Object.entries(keep)) if (v) note[k as 'bend' | 'slide' | 'legato'] = true;
+  return setCell(s, col, string, note);
+}
+
+/**
+ * 기법을 켜고 끈다.
+ * - dead(X): 빈 칸이면 X를 넣고, X면 지운다
+ * - tie(이음): 앞 음을 이어서 울리게 한다 (앞 음이 없으면 아무것도 안 함)
+ * - bend/slide/legato: 지금 음에 표시를 켜고 끈다 (음이 없으면 아무것도 안 함)
+ */
+export function toggleFlag(s: TabScore, col: number, string: number, flag: NoteFlag): TabScore {
+  const cur = s.cols[col].notes[string];
+  if (flag === 'dead') {
+    return setCell(s, col, string, cur?.dead ? null : { fret: 0, dead: true });
+  }
+  if (flag === 'tie') {
+    if (cur?.tie) return setCell(s, col, string, null);
+    const prev = prevNote(s, col, string);
+    if (!prev || prev.note.dead) return s;
+    return setCell(s, col, string, { fret: prev.note.fret, tie: true, bend: prev.note.bend || undefined });
+  }
+  if (!cur || cur.dead) return s;
+  const next: Note = { ...cur };
+  if (next[flag]) delete next[flag];
+  else next[flag] = true;
+  // 슬라이드와 해머링/풀링은 둘 중 하나만
+  if (flag === 'slide' && next.slide) delete next.legato;
+  if (flag === 'legato' && next.legato) delete next.slide;
+  return setCell(s, col, string, next);
+}
+
+export function togglePalmMute(s: TabScore, col: number): TabScore {
+  return withColumn(s, col, (c) => {
+    if (c.pm) delete c.pm;
+    else c.pm = true;
+    return c;
+  });
+}
+
+/** 이 칸부터 템포를 바꾼다. null이면 템포 표시를 지운다 */
+export function setTempoMark(s: TabScore, col: number, tempo: number | null): TabScore {
+  if (col === 0) return { ...s, tempo: tempo ?? undefined };
+  return withColumn(s, col, (c) => {
+    if (tempo) c.tempo = tempo;
+    else delete c.tempo;
+    return c;
+  });
 }
 
 /** bar 뒤에 빈 마디를 넣는다 (bar = -1이면 맨 앞) */
@@ -59,10 +170,14 @@ export function insertBar(s: TabScore, afterBar: number): TabScore {
   return { ...s, cols };
 }
 
-/** bar를 복제해서 바로 뒤에 붙인다 */
+/** bar를 복제해서 바로 뒤에 붙인다 (템포 표시는 복제하지 않는다) */
 export function duplicateBar(s: TabScore, bar: number): TabScore {
   const n = perBar(s);
-  const copy = s.cols.slice(bar * n, (bar + 1) * n).map((c) => c.slice());
+  const copy = s.cols.slice(bar * n, (bar + 1) * n).map((c) => {
+    const d = copyColumn(c);
+    delete d.tempo;
+    return d;
+  });
   const at = (bar + 1) * n;
   return { ...s, cols: [...s.cols.slice(0, at), ...copy, ...s.cols.slice(at)] };
 }
@@ -79,45 +194,63 @@ export function deleteBar(s: TabScore, bar: number): TabScore {
  * 이미 적은 음이 새 격자에 정확히 놓이지 않으면(예: 16분음표 자리에 있는 음을 8분음표로) null.
  */
 export function reshape(s: TabScore, beatsPerBar: number, notesPerBeat: NotesPerBeat): TabScore | null {
-  // 1) 리듬 단위: 각 칸의 시작 위치(박 단위)를 새 격자로 옮긴다
   let cols = s.cols;
   if (notesPerBeat !== s.notesPerBeat) {
     const beats = s.cols.length / s.notesPerBeat;
     const next: Column[] = Array.from({ length: beats * notesPerBeat }, emptyColumn);
     for (let i = 0; i < s.cols.length; i++) {
-      if (isEmptyColumn(s.cols[i])) continue;
+      if (isBlankColumn(s.cols[i])) continue;
       const pos = (i * notesPerBeat) / s.notesPerBeat;
       if (Math.abs(pos - Math.round(pos)) > 1e-9) return null;
-      next[Math.round(pos)] = s.cols[i].slice();
+      next[Math.round(pos)] = copyColumn(s.cols[i]);
     }
     cols = next;
   }
-  // 2) 박자: 이어진 칸을 새 마디 길이로 다시 나누고, 모자란 끝은 빈 칸으로 채운다
   const n = beatsPerBar * notesPerBeat;
   const padded = cols.slice();
   while (padded.length % n !== 0 || padded.length === 0) padded.push(emptyColumn());
-  // 끝에 생긴 완전히 빈 마디는 하나만 남긴다
-  while (padded.length > n && padded.slice(-n).every(isEmptyColumn) && padded.slice(-2 * n, -n).every(isEmptyColumn)) {
+  while (padded.length > n && padded.slice(-n).every(isBlankColumn) && padded.slice(-2 * n, -n).every(isBlankColumn)) {
     padded.splice(-n, n);
   }
-  return { beatsPerBar, notesPerBeat, cols: padded };
+  return { ...s, beatsPerBar, notesPerBeat, cols: padded };
 }
 
-/** 저장된 값이 깨져 있어도 화면이 망가지지 않게 정리한다 */
+/**
+ * 저장된 값(또는 불러온 파일)을 정리한다. 깨진 값은 버리고,
+ * 예전 형식(칸이 숫자 배열이던 시절)도 새 형식으로 바꾼다.
+ */
 export function normalizeScore(raw: unknown): TabScore | null {
   if (!raw || typeof raw !== 'object') return null;
-  const r = raw as Partial<TabScore>;
-  const beatsPerBar = Number(r.beatsPerBar) || 4;
+  const r = raw as Record<string, unknown>;
+  const beatsPerBar = Math.min(12, Math.max(1, Math.round(Number(r.beatsPerBar)) || 4));
   const npb = ([1, 2, 3, 4] as const).find((v) => v === r.notesPerBeat) ?? 2;
   const n = beatsPerBar * npb;
-  const cols = Array.isArray(r.cols)
-    ? r.cols.map((c) =>
-        Array.from({ length: STRING_COUNT }, (_, i) => {
-          const f = Array.isArray(c) ? c[i] : null;
-          return typeof f === 'number' && f >= 0 && f <= MAX_FRET ? f : null;
-        }),
-      )
-    : [];
+  const tempo = Number(r.tempo) > 0 ? Math.round(Number(r.tempo)) : undefined;
+
+  const toNote = (v: unknown): Cell => {
+    if (typeof v === 'number') return v >= 0 && v <= MAX_FRET ? { fret: Math.round(v) } : null;
+    if (!v || typeof v !== 'object') return null;
+    const o = v as Record<string, unknown>;
+    const fret = Number(o.fret);
+    if (!o.dead && !(fret >= 0 && fret <= MAX_FRET)) return null;
+    const note: Note = { fret: o.dead ? 0 : Math.round(fret) };
+    for (const k of ['dead', 'tie', 'bend', 'slide', 'legato'] as const) if (o[k]) note[k] = true;
+    return note;
+  };
+
+  const cols: Column[] = (Array.isArray(r.cols) ? r.cols : []).map((c: unknown) => {
+    const isLegacy = Array.isArray(c);
+    const src = isLegacy ? (c as unknown[]) : ((c as Record<string, unknown>)?.notes as unknown[]);
+    const col: Column = {
+      notes: Array.from({ length: STRING_COUNT }, (_, i) => toNote(Array.isArray(src) ? src[i] : null)),
+    };
+    if (!isLegacy && c && typeof c === 'object') {
+      const o = c as Record<string, unknown>;
+      if (o.pm) col.pm = true;
+      if (Number(o.tempo) > 0) col.tempo = Math.round(Number(o.tempo));
+    }
+    return col;
+  });
   while (cols.length % n !== 0 || cols.length === 0) cols.push(emptyColumn());
-  return { beatsPerBar, notesPerBeat: npb, cols };
+  return { beatsPerBar, notesPerBeat: npb, tempo, cols };
 }

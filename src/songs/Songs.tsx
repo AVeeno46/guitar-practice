@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { listSongs, requestPersistentStorage } from './db';
+import { listSongs, requestPersistentStorage, saveSong } from './db';
+import { songFromFile } from './songFile';
 import { progressOf, type Song } from './types';
 import SongDetail from './SongDetail';
 import SongEditor from './SongEditor';
@@ -14,6 +15,20 @@ export default function Songs() {
   const [songs, setSongs] = useState<Song[] | null>(null);
   const [loadError, setLoadError] = useState(false);
   const [view, setView] = useState<View>({ kind: 'list' });
+  const [importError, setImportError] = useState<string | null>(null);
+
+  const importFile = async (file: File | undefined) => {
+    if (!file) return;
+    setImportError(null);
+    try {
+      const song = await songFromFile(file);
+      await saveSong(song);
+      setSongs((list) => [song, ...(list ?? [])]);
+      setView({ kind: 'detail', id: song.id });
+    } catch (e) {
+      setImportError(e instanceof Error ? e.message : '곡 파일을 불러오지 못했어요');
+    }
+  };
 
   useEffect(() => {
     requestPersistentStorage();
@@ -80,6 +95,22 @@ export default function Songs() {
       <button className="song-add" onClick={() => setView({ kind: 'edit', id: null })}>
         + 곡 추가
       </button>
+      <label className="song-import">
+        곡 파일 불러오기
+        <input
+          type="file"
+          accept=".json,application/json"
+          onChange={(e) => {
+            void importFile(e.target.files?.[0]);
+            e.target.value = '';
+          }}
+        />
+      </label>
+      {importError && (
+        <p className="form-error" role="alert">
+          {importError}
+        </p>
+      )}
 
       {songs.length === 0 ? (
         <p className="songs-empty">
@@ -99,6 +130,7 @@ export default function Songs() {
                   <span className="song-card-bpm">
                     <strong>{song.practiceBpm}</strong>
                     {song.targetBpm ? ` / ${song.targetBpm}` : ''} BPM
+                    {song.tab && <span className="song-card-sheets">TAB</span>}
                     {song.sheets.length > 0 && <span className="song-card-sheets">악보 {song.sheets.length}</span>}
                   </span>
                   {progress !== null && (

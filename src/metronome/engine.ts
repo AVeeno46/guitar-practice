@@ -21,6 +21,9 @@ export interface Tick {
 /** 소리를 예약할 때마다 불린다. 같은 오디오 시계에 다른 소리(TAB 음)를 맞춰 예약할 때 쓴다 */
 export type ScheduleListener = (tick: Tick, ctx: AudioContext) => void;
 
+/** 소리 번호마다 템포 배율 (악보 중간 템포 변경용). 1이면 설정한 BPM 그대로 */
+export type TempoScale = (index: number) => number;
+
 export const BPM_MIN = 30;
 export const BPM_MAX = 300;
 
@@ -39,6 +42,7 @@ export class MetronomeEngine {
   private sub = 0;
   private count = 0;
   private onSchedule: ScheduleListener | null = null;
+  private tempoScale: TempoScale | null = null;
   private queue: Tick[] = [];
   private settings: MetronomeSettings;
   running = false;
@@ -97,6 +101,10 @@ export class MetronomeEngine {
     this.onSchedule = listener;
   }
 
+  setTempoScale(scale: TempoScale | null) {
+    this.tempoScale = scale;
+  }
+
   currentTick(): Tick | null {
     if (!this.ctx) return null;
     const now = this.ctx.currentTime;
@@ -120,7 +128,10 @@ export class MetronomeEngine {
 
   private advance() {
     const { bpm, subdivision, beatsPerBar } = this.settings;
-    this.nextTime += 60 / bpm / subdivision;
+    // 방금 예약한 소리(count - 1)의 템포 배율로 다음 소리까지의 간격을 정한다
+    const raw = this.tempoScale?.(this.count - 1) ?? 1;
+    const scale = Number.isFinite(raw) && raw > 0 ? Math.min(4, Math.max(0.25, raw)) : 1;
+    this.nextTime += 60 / (bpm * scale) / subdivision;
     this.sub += 1;
     if (this.sub >= subdivision) {
       this.sub = 0;

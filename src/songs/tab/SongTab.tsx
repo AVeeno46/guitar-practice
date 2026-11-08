@@ -12,7 +12,12 @@ import {
   midiOf,
   perBar,
   reshape,
+  setCell,
   setFret,
+  setTempoMark,
+  toggleFlag,
+  togglePalmMute,
+  type NoteFlag,
   type NotesPerBeat,
   type TabScore,
 } from './score';
@@ -30,7 +35,7 @@ interface Props {
   onLoopChange: (loop: LoopRange | null) => void;
   options: PlayOptions;
   onOptionsChange: (o: PlayOptions) => void;
-  player: { running: boolean; cursor: number; countIn: number; pass: number };
+  player: { running: boolean; cursor: number; countIn: number; pass: number; scale: number };
   targetBpm: number | null;
   practiceBpm: number;
 }
@@ -38,6 +43,8 @@ interface Props {
 const BEAT_CHOICES = [2, 3, 4, 5, 6, 7];
 const RHYTHM_CHOICES: NotesPerBeat[] = [1, 2, 3, 4];
 const TWO_DIGIT_MS = 1500;
+/** PC 단축키: X 뮤트, T 이음, H 해머링/풀링, S 슬라이드, B 벤딩, M 팜뮤트 */
+const TECH_KEYS: Record<string, NoteFlag | 'pm'> = { x: 'dead', t: 'tie', h: 'legato', s: 'slide', b: 'bend', m: 'pm' };
 const AUTO_ADVANCE_WAIT_MS = 900;
 
 export default function SongTab(props: Props) {
@@ -137,7 +144,12 @@ function TabPractice({
         {player.countIn > 0 ? (
           <span className="drill-countin">준비 {player.countIn}</span>
         ) : player.running ? (
-          <span className="drill-live">● 따라 치는 중{player.pass > 0 ? ` · ${player.pass + 1}번째` : ''}</span>
+          <span className="drill-live">
+            ● 따라 치는 중{player.pass > 0 ? ` · ${player.pass + 1}번째` : ''}
+            {player.scale !== 1 && (
+              <span className="muted"> · 이 구간 {Math.round(practiceBpm * player.scale)} BPM</span>
+            )}
+          </span>
         ) : (
           <span className="muted">마디 번호를 누르면 그 구간만 반복해요. 두 번째로 누른 마디까지 구간이 넓어져요.</span>
         )}
@@ -175,6 +187,9 @@ function TabEditor({ score, onScoreChange, onEditingChange }: Props & { score: T
   }, [score, sel]);
 
   const n = perBar(score);
+  const selColumn = score.cols[Math.min(sel.col, score.cols.length - 1)];
+  const selNote = selColumn.notes[sel.string];
+  const [tempoSheet, setTempoSheet] = useState(false);
   const bar = Math.floor(sel.col / n);
   const beat = Math.floor((sel.col % n) / score.notesPerBeat);
   const sub = (sel.col % n) % score.notesPerBeat;
@@ -229,7 +244,8 @@ function TabEditor({ score, onScoreChange, onEditingChange }: Props & { score: T
   const typeDigit = (d: number) => {
     clearAdvance();
     const { score: s, sel: c } = live.current;
-    const cur = s.cols[c.col][c.string];
+    const curNote = s.cols[c.col].notes[c.string];
+    const cur = curNote && !curNote.dead && !curNote.tie ? curNote.fret : null;
     const li = lastInput.current;
     let value = d;
     // 같은 칸에서 1·2 다음에 바로 숫자를 누르면 두 자리 (예: 1, 2 → 12)
@@ -251,7 +267,20 @@ function TabEditor({ score, onScoreChange, onEditingChange }: Props & { score: T
     clearAdvance();
     lastInput.current = null;
     const { score: s, sel: c } = live.current;
-    if (s.cols[c.col][c.string] !== null) commit(setFret(s, c.col, c.string, null));
+    if (s.cols[c.col].notes[c.string] !== null) commit(setCell(s, c.col, c.string, null));
+  };
+
+  const flag = (f: NoteFlag) => {
+    clearAdvance();
+    lastInput.current = null;
+    const { score: s, sel: c } = live.current;
+    const next = toggleFlag(s, c.col, c.string, f);
+    if (next !== s) commit(next);
+  };
+
+  const palmMute = () => {
+    const { score: s, sel: c } = live.current;
+    commit(togglePalmMute(s, c.col));
   };
 
   const selectCell = (c: Cell) => {
@@ -259,8 +288,8 @@ function TabEditor({ score, onScoreChange, onEditingChange }: Props & { score: T
     lastInput.current = null;
     live.current.sel = c;
     setSel(c);
-    const f = live.current.score.cols[c.col][c.string];
-    if (f !== null) pluck(midiOf(c.string, f));
+    const f = live.current.score.cols[c.col].notes[c.string];
+    if (f && !f.dead) pluck(midiOf(c.string, f.fret));
   };
 
   useEffect(() => clearAdvance, []);
@@ -287,9 +316,14 @@ function TabEditor({ score, onScoreChange, onEditingChange }: Props & { score: T
       } else if (e.key === 'ArrowDown') {
         e.preventDefault();
         move(0, -1);
-      } else if (e.key === 'Backspace' || e.key === 'Delete' || e.key.toLowerCase() === 'x') {
+      } else if (e.key === 'Backspace' || e.key === 'Delete') {
         e.preventDefault();
         clearCell();
+      } else if (!e.ctrlKey && !e.metaKey && TECH_KEYS[e.key.toLowerCase()]) {
+        e.preventDefault();
+        const k = TECH_KEYS[e.key.toLowerCase()];
+        if (k === 'pm') palmMute();
+        else flag(k);
       } else if (e.key === 'Escape') {
         onEditingChange(false);
       }
@@ -327,6 +361,9 @@ function TabEditor({ score, onScoreChange, onEditingChange }: Props & { score: T
         <button className="scale-chip" onClick={() => barOp((s, b) => deleteBar(s, b), (s) => Math.min(sel.col, s.cols.length - 1))}>
           마디 삭제
         </button>
+        <button className="scale-chip" onClick={() => setTempoSheet(true)}>
+          템포 변경
+        </button>
         <button className="scale-chip" onClick={() => setShowSettings(true)}>
           박자·리듬
         </button>
@@ -336,10 +373,29 @@ function TabEditor({ score, onScoreChange, onEditingChange }: Props & { score: T
 
       <p className="tab-help">
         칸을 누르고 숫자를 입력해요. 같은 칸에서 1·2 다음 숫자를 바로 누르면 두 자리(예: 12). 한 칸에 여러 줄을 적으면 동시에 치는 음(코드)이에요.
+        h/p·슬라이드는 다음 음까지 이어지는 표시라 앞 음에 붙여요. (이음)은 앞 음을 다시 치지 않고 계속 울리는 칸이에요.
       </p>
 
       {/* 아래에 붙어 있는 입력 패드 */}
       <div className="tab-pad" role="group" aria-label="TAB 입력 패드">
+        <div className="pad-grid tech">
+          {(
+            [
+              ['dead', 'X', '뮤트음'],
+              ['tie', '(이음)', '앞 음 이어서 울림'],
+              ['legato', 'h/p', '해머링·풀링'],
+              ['slide', '슬라이드', '슬라이드'],
+              ['bend', '벤딩', '벤딩'],
+            ] as const
+          ).map(([f, text, aria]) => (
+            <button key={f} className={`pad-key tech ${selNote?.[f] ? 'on' : ''}`} onClick={() => flag(f)} aria-label={aria} aria-pressed={!!selNote?.[f]}>
+              {text}
+            </button>
+          ))}
+          <button className={`pad-key tech ${selColumn.pm ? 'on' : ''}`} onClick={palmMute} aria-label="팜뮤트" aria-pressed={!!selColumn.pm}>
+            P.M.
+          </button>
+        </div>
         <div className="pad-grid">
           {[1, 2, 3, 4, 5].map((d) => (
             <button key={d} className="pad-key" onClick={() => typeDigit(d)}>
@@ -380,6 +436,18 @@ function TabEditor({ score, onScoreChange, onEditingChange }: Props & { score: T
           </button>
         </div>
       </div>
+
+      {tempoSheet && (
+        <TempoSheet
+          bar={bar}
+          current={bar === 0 ? (score.tempo ?? null) : (score.cols[bar * n].tempo ?? null)}
+          onApply={(t) => {
+            commit(setTempoMark(live.current.score, bar * n, t));
+            setTempoSheet(false);
+          }}
+          onClose={() => setTempoSheet(false)}
+        />
+      )}
 
       {showSettings && (
         <ShapeSheet
@@ -456,6 +524,42 @@ function ShapeSheet({
         </button>
         <button className={`delete-button ${confirmDelete ? 'armed' : ''}`} onClick={() => (confirmDelete ? onDelete() : setConfirmDelete(true))}>
           {confirmDelete ? '한 번 더 누르면 TAB 악보가 삭제돼요' : 'TAB 악보 삭제'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function TempoSheet({
+  bar,
+  current,
+  onApply,
+  onClose,
+}: {
+  bar: number;
+  current: number | null;
+  onApply: (tempo: number | null) => void;
+  onClose: () => void;
+}) {
+  const [value, setValue] = useState(current ? String(current) : '');
+  const parsed = Number(value);
+  const valid = value.trim() === '' || (parsed >= 20 && parsed <= 400);
+  return (
+    <div className="sheet-backdrop" onClick={onClose}>
+      <div className="sheet-panel" role="dialog" aria-label="템포 변경" onClick={(e) => e.stopPropagation()}>
+        <h2>{bar === 0 ? '원곡 템포' : `${bar + 1}마디부터 템포`}</h2>
+        <p className="tab-help">
+          {bar === 0
+            ? '악보에 적힌 원래 빠르기예요. 연습 BPM이 이 템포에 해당하고, 중간에 템포가 바뀌는 구간은 같은 비율로 따라가요.'
+            : '이 마디부터 빠르기가 바뀌어요(원곡 기준). 비우면 템포 변경을 지워요.'}
+        </p>
+        <label className="field">
+          <span>BPM</span>
+          <input type="number" inputMode="numeric" value={value} onChange={(e) => setValue(e.target.value)} placeholder="예: 95" autoFocus />
+        </label>
+        {!valid && <p className="form-error">20~400 사이로 적어 주세요</p>}
+        <button className="sheet-primary" disabled={!valid} onClick={() => onApply(value.trim() ? Math.round(parsed) : null)}>
+          적용
         </button>
       </div>
     </div>
