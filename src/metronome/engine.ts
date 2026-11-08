@@ -14,6 +14,7 @@ export interface MetronomeSettings {
 export interface Tick {
   beat: number; // 0-based 마디 안의 박
   sub: number; // 0-based 박 안의 세분 음
+  index: number; // 시작한 뒤 몇 번째 소리인지 (0부터, 세분 음 포함)
   time: number; // AudioContext 시간
 }
 
@@ -33,6 +34,7 @@ export class MetronomeEngine {
   private nextTime = 0;
   private beat = 0;
   private sub = 0;
+  private count = 0;
   private queue: Tick[] = [];
   private settings: MetronomeSettings;
   running = false;
@@ -72,6 +74,7 @@ export class MetronomeEngine {
     this.running = true;
     this.beat = 0;
     this.sub = 0;
+    this.count = 0;
     this.queue = [];
     this.nextTime = this.ctx.currentTime + 0.06;
     this.scheduler();
@@ -100,7 +103,7 @@ export class MetronomeEngine {
     if (!this.ctx) return;
     while (this.nextTime < this.ctx.currentTime + SCHEDULE_AHEAD_S) {
       this.scheduleClick(this.beat, this.sub, this.nextTime);
-      this.queue.push({ beat: this.beat, sub: this.sub, time: this.nextTime });
+      this.queue.push({ beat: this.beat, sub: this.sub, index: this.count++, time: this.nextTime });
       this.advance();
     }
   }

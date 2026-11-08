@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { clampBpm } from './engine';
+import { clampBpm, type MetronomeSettings, type Subdivision } from './engine';
 import { loadMetronomeSettings, useMetronome } from './useMetronome';
 import './mini.css';
 
@@ -8,6 +8,10 @@ interface Props {
   onBpmChange: (bpm: number) => void;
   /** 버튼 설명에 쓰는 이름 (예: "연습 BPM") */
   label?: string;
+  /** 박을 몇 개로 쪼갤지. 주면 메트로놈 탭 설정 대신 이 값을 쓴다 (연습 화면의 박당 음 수) */
+  subdivision?: Subdivision;
+  /** 소리가 날 때마다 몇 번째 소리인지 알려준다 (정지하면 -1) */
+  onTick?: (index: number, settings: MetronomeSettings) => void;
 }
 
 // 슬라이더는 자주 쓰는 범위만: 폭이 좁은 폰에서도 1~2 BPM 단위로 움직이게
@@ -23,10 +27,21 @@ const HOLD_REPEAT_MS = 90; // 이 간격으로 반복
  * ± 버튼은 누르고 있으면 계속 바뀌고, 슬라이더로 크게 옮길 수 있다.
  * PC에서는 스페이스바로 시작/정지.
  */
-export default function MiniMetronome({ bpm, onBpmChange, label = 'BPM' }: Props) {
+export default function MiniMetronome({ bpm, onBpmChange, label = 'BPM', subdivision, onTick }: Props) {
   const [base] = useState(loadMetronomeSettings);
-  const settings = useMemo(() => ({ ...base, bpm }), [base, bpm]);
-  const { running, activeBeat, toggle } = useMetronome(settings);
+  const settings = useMemo(
+    () => ({ ...base, bpm, subdivision: subdivision ?? base.subdivision }),
+    [base, bpm, subdivision],
+  );
+  const { running, activeBeat, tickIndex, toggle } = useMetronome(settings);
+
+  const onTickRef = useRef(onTick);
+  useEffect(() => {
+    onTickRef.current = onTick;
+  }, [onTick]);
+  useEffect(() => {
+    onTickRef.current?.(tickIndex, settings);
+  }, [tickIndex, settings]);
 
   // 누르고 있는 동안 반복할 때 직전 값에 이어서 계산하도록 최신 BPM을 따로 둔다
   const bpmRef = useRef(bpm);

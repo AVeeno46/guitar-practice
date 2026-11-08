@@ -1,4 +1,4 @@
-export type ActivityKind = 'free' | 'metronome' | 'song' | 'scale' | 'routine';
+export type ActivityKind = 'free' | 'metronome' | 'song' | 'scale' | 'drill' | 'routine';
 
 /** 지금 보고 있는 화면이 무슨 연습인지. 연습 시간은 이 단위로 나눠 쌓인다. */
 export interface Activity {

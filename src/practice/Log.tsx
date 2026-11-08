@@ -4,7 +4,8 @@ import { formatDate, formatDuration, formatTime, loadGoals, saveGoals, type Goal
 import { usePractice } from './hooks';
 import type { PracticeSession } from './types';
 import { listSongs } from '../songs/db';
-import { todayKey, type Song } from '../songs/types';
+import { todayKey, type BpmEntry, type Song } from '../songs/types';
+import { loadDrills } from '../basics/drillStore';
 import './practice.css';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -111,7 +112,7 @@ export default function Log() {
         onDelete={(id) => setSessions((list) => (list ?? []).filter((x) => x.id !== id))}
       />
 
-      <BpmProgress songs={songs} />
+      <BpmProgress songs={songs} refresh={practice.savedCount} />
     </section>
   );
 }
@@ -416,28 +417,49 @@ function SessionCard({
   );
 }
 
-// ---------- 곡별 BPM ----------
+// ---------- 곡·기본기 BPM ----------
 
-function BpmProgress({ songs }: { songs: Song[] }) {
-  const tracked = songs.filter((s) => s.bpmLog.length >= 2);
+interface BpmSeries {
+  id: string;
+  title: string;
+  log: BpmEntry[];
+  current: number;
+  target: number | null;
+}
+
+function BpmProgress({ songs, refresh }: { songs: Song[]; refresh: number }) {
+  // 기본기 BPM은 localStorage에 있다. 연습이 저장될 때(refresh)마다 다시 읽는다
+  const drills = useMemo(() => {
+    void refresh;
+    return loadDrills();
+  }, [refresh]);
+  const series: BpmSeries[] = [
+    ...Object.entries(drills)
+      .sort(([, a], [, b]) => b.updatedAt - a.updatedAt)
+      .map(([id, d]) => ({ id, title: d.label, log: d.log, current: d.bpm, target: null })),
+    ...songs.map((s) => ({ id: s.id, title: s.title, log: s.bpmLog, current: s.practiceBpm, target: s.targetBpm })),
+  ].filter((x) => x.log.length >= 2);
+
   return (
     <div className="log-block">
-      <h3>곡별 BPM 변화</h3>
-      {tracked.length === 0 ? (
-        <p className="log-empty">곡 화면에서 연습 BPM을 올리면 날짜별로 쌓여서 여기에 그래프가 생겨요.</p>
+      <h3>BPM 변화</h3>
+      {series.length === 0 ? (
+        <p className="log-empty">
+          기본기나 곡 화면에서 BPM을 올리면 날짜별로 쌓여서, 이틀 이상 기록되면 여기에 그래프가 생겨요.
+        </p>
       ) : (
         <ul className="bpm-list">
-          {tracked.map((song) => (
-            <li key={song.id} className="bpm-row">
+          {series.map((x) => (
+            <li key={x.id} className="bpm-row">
               <div className="bpm-text">
-                <span className="bpm-title">{song.title}</span>
+                <span className="bpm-title">{x.title}</span>
                 <span className="bpm-change">
-                  {song.bpmLog[0].bpm} → {song.practiceBpm} BPM
-                  <Delta value={song.practiceBpm - song.bpmLog[0].bpm} />
-                  {song.targetBpm ? <span className="muted"> · 목표 {song.targetBpm}</span> : null}
+                  {x.log[0].bpm} → {x.current} BPM
+                  <Delta value={x.current - x.log[0].bpm} />
+                  {x.target ? <span className="muted"> · 목표 {x.target}</span> : null}
                 </span>
               </div>
-              <Sparkline song={song} />
+              <Sparkline series={x} />
             </li>
           ))}
         </ul>
@@ -450,15 +472,15 @@ const Delta = ({ value }: { value: number }) =>
   value === 0 ? null : <span className={value > 0 ? 'delta up' : 'delta down'}>{value > 0 ? ` +${value}` : ` ${value}`}</span>;
 
 /** 날짜 간격을 살린 BPM 선. 목표 BPM이 있으면 점선으로 함께 그린다. */
-function Sparkline({ song }: { song: Song }) {
+function Sparkline({ series }: { series: BpmSeries }) {
   const w = 132;
   const h = 44;
   const pad = 5;
-  const log = song.bpmLog;
+  const { log, target, title } = series;
   const times = log.map((e) => new Date(e.date).getTime());
   const t0 = times[0];
   const span = Math.max(DAY_MS, times[times.length - 1] - t0);
-  const values = log.map((e) => e.bpm).concat(song.targetBpm ? [song.targetBpm] : []);
+  const values = log.map((e) => e.bpm).concat(target ? [target] : []);
   const lo = Math.min(...values);
   const hi = Math.max(...values);
   const range = Math.max(4, hi - lo);
@@ -468,13 +490,11 @@ function Sparkline({ song }: { song: Song }) {
   const last = log[log.length - 1];
 
   return (
-    <svg className="sparkline" viewBox={`0 0 ${w} ${h}`} width={w} height={h} role="img" aria-label={`${song.title} BPM 변화`}>
-      {song.targetBpm && (
-        <line x1={pad} x2={w - pad} y1={y(song.targetBpm)} y2={y(song.targetBpm)} className="spark-target" />
-      )}
+    <svg className="sparkline" viewBox={`0 0 ${w} ${h}`} width={w} height={h} role="img" aria-label={`${title} BPM 변화`}>
+      {target && <line x1={pad} x2={w - pad} y1={y(target)} y2={y(target)} className="spark-target" />}
       <polyline points={points} className="spark-line" fill="none" />
       {log.map((e, i) => (
-        // 보이는 점은 마지막 하나지만, 마우스를 올리면 날짜별 값이 보이도록 투명한 큰 원을 깐다
+        // 마우스를 올리면 날짜별 값이 보이도록 투명한 큰 원을 깐다
         <circle key={e.date} cx={x(times[i])} cy={y(e.bpm)} r={8} className="spark-hit">
           <title>{`${formatDate(e.date)} · ${e.bpm} BPM`}</title>
         </circle>

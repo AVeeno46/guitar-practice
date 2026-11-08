@@ -1,23 +1,23 @@
 import { useState } from 'react';
 import Metronome from './metronome/Metronome';
 import Songs from './songs/Songs';
-import Scales from './scales/Scales';
+import Basics from './basics/Basics';
 import Log from './practice/Log';
 import PracticeBar from './practice/PracticeBar';
 import { usePracticeInteractionListener } from './practice/hooks';
 import './app.css';
 
-type TabId = 'metronome' | 'songs' | 'log' | 'routine' | 'scales';
+type TabId = 'metronome' | 'basics' | 'songs' | 'routine' | 'log';
 
 const TABS: { id: TabId; label: string; icon: string }[] = [
-  { id: 'metronome', label: '메트로놈', icon: '◔' },
+  { id: 'metronome', label: '메트로놈', icon: '◷' },
+  { id: 'basics', label: '기본기', icon: '⌗' },
   { id: 'songs', label: '곡', icon: '♪' },
-  { id: 'log', label: '기록', icon: '▤' },
   { id: 'routine', label: '루틴', icon: '↻' },
-  { id: 'scales', label: '스케일', icon: '⌗' },
+  { id: 'log', label: '기록', icon: '▤' },
 ];
 
-const COMING_SOON: Record<Exclude<TabId, 'metronome' | 'songs' | 'scales' | 'log'>, string> = {
+const COMING_SOON: Record<Exclude<TabId, 'metronome' | 'songs' | 'basics' | 'log'>, string> = {
   routine: '항목별 시간과 BPM을 정해 순서대로 진행하는 루틴 화면이 들어올 예정이에요.',
 };
 
@@ -38,8 +38,8 @@ export default function App() {
           <Metronome />
         ) : tab === 'songs' ? (
           <Songs />
-        ) : tab === 'scales' ? (
-          <Scales />
+        ) : tab === 'basics' ? (
+          <Basics />
         ) : tab === 'log' ? (
           <Log />
         ) : (

@@ -25,6 +25,8 @@ export function useMetronome(settings: MetronomeSettings) {
   const [engine] = useState(() => new MetronomeEngine(settings));
   const [running, setRunning] = useState(false);
   const [activeBeat, setActiveBeat] = useState(-1);
+  // 시작한 뒤 몇 번째 소리인지(세분 음 포함). 정지 상태면 -1. 연습 화면의 '지금 칠 음' 표시에 쓴다
+  const [tickIndex, setTickIndex] = useState(-1);
   const rafRef = useRef<number | null>(null);
   const startingRef = useRef(false);
 
@@ -71,6 +73,7 @@ export function useMetronome(settings: MetronomeSettings) {
       stopLoop();
       setRunning(false);
       setActiveBeat(-1);
+      setTickIndex(-1);
       return;
     }
     if (startingRef.current) return; // 빠르게 두 번 눌러도 한 번만 시작
@@ -84,11 +87,14 @@ export function useMetronome(settings: MetronomeSettings) {
     setRunning(true);
     const loop = () => {
       const tick = engine.currentTick();
-      if (tick && tick.sub === 0) setActiveBeat(tick.beat);
+      if (tick) {
+        setTickIndex(tick.index);
+        if (tick.sub === 0) setActiveBeat(tick.beat);
+      }
       rafRef.current = requestAnimationFrame(loop);
     };
     rafRef.current = requestAnimationFrame(loop);
   }, [engine]);
 
-  return { running, activeBeat, toggle };
+  return { running, activeBeat, tickIndex, toggle };
 }
