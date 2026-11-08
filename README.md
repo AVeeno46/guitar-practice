@@ -15,8 +15,8 @@
 ## 데이터 저장
 
 - 메트로놈 설정: `localStorage` (`gp.metronome`)
-- 곡과 악보 파일, 연습 기록: IndexedDB `guitar-practice` (`songs`, `sheets`, `sessions` 저장소, v2).
-- 진행 중인 연습: `localStorage` (`gp.activeSession`) — 새로고침해도 이어지고, 10분 넘게 닫혀 있었으면 닫힌 시점에 끝낸다. 폰 사진은 긴 변 2400px JPEG로 줄여 저장한다.
+- 곡과 악보 파일, 연습 기록: IndexedDB `guitar-practice` (`songs`, `sheets`, `sessions` 저장소, v2). 폰 사진은 긴 변 2400px JPEG로 줄여 저장한다.
+- 진행 중인 연습: `localStorage` (`gp.activeSession`) — 새로고침해도 이어지고, 10분 넘게 닫혀 있었으면 닫힌 시점에 끝낸다.
 - PDF 악보는 pdf.js로 직접 그린다(iOS에서도 모든 쪽이 보이도록). pdf.js는 PDF를 처음 열 때만 불러온다.
 
 ## 개발
