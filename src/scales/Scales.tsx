@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { loadLocal, saveLocal } from '../storage';
 import Fretboard, { type LabelMode } from './Fretboard';
 import {
+  BOX_COLORS,
   SCALES,
   pentatonicBoxes,
   relativeRoot,
@@ -19,9 +20,10 @@ interface ScaleSettings {
   position: number; // 0 = 전체, 1..5
   labelMode: LabelMode;
   blue: boolean;
+  outlines: boolean;
 }
 
-const DEFAULTS: ScaleSettings = { root: 9, type: 'minor', position: 0, labelMode: 'name', blue: false };
+const DEFAULTS: ScaleSettings = { root: 9, type: 'minor', position: 0, labelMode: 'name', blue: false, outlines: true };
 
 const ROOTS = Array.from({ length: 12 }, (_, i) => i);
 const LABEL_MODES: { value: LabelMode; label: string }[] = [
@@ -46,7 +48,7 @@ function useVerticalBoard() {
 export default function Scales() {
   const [settings, setSettings] = useState<ScaleSettings>(() => loadLocal(STORAGE_KEY, DEFAULTS));
   const vertical = useVerticalBoard();
-  const { root, type, position, labelMode, blue } = settings;
+  const { root, type, position, labelMode, blue, outlines } = settings;
 
   useEffect(() => saveLocal(STORAGE_KEY, settings), [settings]);
 
@@ -113,6 +115,7 @@ export default function Scales() {
                 className={`scale-chip ${position === p ? 'selected' : ''}`}
                 onClick={() => set({ position: p })}
               >
+                {p > 0 && outlines && <span className="box-dot" style={{ background: BOX_COLORS[p - 1] }} />}
                 {p === 0 ? '전체' : p}
               </button>
             ))}
@@ -131,6 +134,13 @@ export default function Scales() {
                 {m.label}
               </button>
             ))}
+            <button
+              className={`scale-chip wide toggle box ${outlines ? 'on' : ''}`}
+              onClick={() => set({ outlines: !outlines })}
+              aria-pressed={outlines}
+            >
+              박스 테두리
+            </button>
           </div>
         </div>
       </div>
@@ -155,7 +165,13 @@ export default function Scales() {
       </div>
 
       <div className="fretboard-wrap">
-        <Fretboard notes={notes} boxes={boxes} labelMode={labelMode} vertical={vertical} />
+        <Fretboard
+          notes={notes}
+          boxes={boxes}
+          outlines={outlines ? (boxes ?? allBoxes) : []}
+          labelMode={labelMode}
+          vertical={vertical}
+        />
       </div>
     </section>
   );

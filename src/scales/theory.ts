@@ -120,5 +120,8 @@ export function pentatonicBoxes(root: number, type: ScaleType): Box[] {
   return boxes;
 }
 
+/** 포지션 1~5 박스 테두리 색 (근음 주황, 블루 노트 파랑과 겹치지 않게 고름) */
+export const BOX_COLORS = ['#e07a5f', '#7cc48b', '#4fc1c9', '#c59be0', '#e6cf6a'];
+
 /** A4=440Hz 기준 주파수 */
 export const frequencyOf = (midi: number) => 440 * 2 ** ((midi - 69) / 12);

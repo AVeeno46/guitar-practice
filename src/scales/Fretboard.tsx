@@ -1,4 +1,4 @@
-import { MAX_FRET, STRING_LABELS, TUNING, cellKey, pitchClassAt, type Box, type ScaleNote } from './theory';
+import { BOX_COLORS, MAX_FRET, STRING_LABELS, TUNING, cellKey, pitchClassAt, type Box, type ScaleNote } from './theory';
 import { pluck } from './pluck';
 
 export type LabelMode = 'name' | 'degree' | 'none';
@@ -7,6 +7,8 @@ interface Props {
   notes: Map<number, ScaleNote>;
   /** 강조할 포지션 박스들(같은 포지션의 12프렛 위 모양 포함). null이면 전체 표시 */
   boxes: Box[] | null;
+  /** 테두리를 그릴 박스들 */
+  outlines: Box[];
   labelMode: LabelMode;
   vertical: boolean;
 }
@@ -19,23 +21,23 @@ const FRETS = Array.from({ length: MAX_FRET + 1 }, (_, f) => f);
  * 지판 그림. 가로(PC)는 1번줄이 위, 세로(폰)는 6번줄이 왼쪽에 오고
  * 0프렛(개방현)은 너트 바깥에 그린다.
  */
-export default function Fretboard({ notes, boxes, labelMode, vertical }: Props) {
+export default function Fretboard({ notes, boxes, outlines, labelMode, vertical }: Props) {
   const open = vertical ? 40 : 40; // 개방현 칸 길이
   const fw = vertical ? 46 : 58; // 프렛 간격
-  const sp = vertical ? 50 : 34; // 줄 간격
+  const sp = vertical ? 48 : 34; // 줄 간격
   const r = vertical ? 16 : 13; // 음 표시 반지름
   const length = open + MAX_FRET * fw;
 
   // 지판 방향(along)과 줄 방향(across) 좌표를 화면 좌표로 바꾼다
   const padAlong = vertical ? 6 : 26; // 가로일 때 왼쪽 줄 번호 자리
-  const padAcross = vertical ? 30 : 6; // 세로일 때 왼쪽 프렛 번호 자리
+  const padAcross = vertical ? 30 : 26; // 세로: 왼쪽 프렛 번호 자리, 가로: 위쪽 박스 번호 자리
   const across = (s: number) => padAcross + r + 4 + (vertical ? s : 5 - s) * sp;
   const xy = (along: number, acrossPos: number) =>
     vertical ? { x: acrossPos, y: padAlong + along } : { x: padAlong + along, y: acrossPos };
   const fretCenter = (f: number) => (f === 0 ? open / 2 : open + (f - 0.5) * fw);
   const fretLine = (f: number) => open + f * fw;
 
-  const crossSize = padAcross + 2 * (r + 4) + 5 * sp + (vertical ? 4 : 24);
+  const crossSize = padAcross + 2 * (r + 4) + 5 * sp + (vertical ? 28 : 24); // 세로: 오른쪽 박스 번호 자리
   const alongSize = padAlong + length + 8;
   const width = vertical ? crossSize : alongSize;
   const height = vertical ? alongSize : crossSize;
@@ -50,6 +52,36 @@ export default function Fretboard({ notes, boxes, labelMode, vertical }: Props) 
     boxes.some(
       (b) => b.cells.has(cellKey(s, f)) || (note.isBlue && f > b.spans[s][0] && f < b.spans[s][1]),
     );
+
+  // 박스 테두리: 줄마다 [시작 프렛, 끝 프렛]을 감싸는 계단 모양 다각형.
+  // 줄과 줄 사이 한가운데에서 꺾여서, 줄마다 어느 프렛까지가 박스인지 그대로 보인다.
+  const pad = r + 5;
+  const out = vertical ? -1 : 1; // 6번줄 바깥 방향
+  const bandStart = (s: number) => (s === 0 ? across(0) + out * pad : (across(s - 1) + across(s)) / 2);
+  const bandEnd = (s: number) => (s === 5 ? across(5) - out * pad : (across(s) + across(s + 1)) / 2);
+  const outlinePath = (box: Box) => {
+    const pts: [number, number][] = [];
+    STRINGS.forEach((s) => {
+      const lo = fretCenter(box.spans[s][0]) - pad;
+      pts.push([lo, bandStart(s)], [lo, bandEnd(s)]);
+    });
+    [...STRINGS].reverse().forEach((s) => {
+      const hi = fretCenter(box.spans[s][1]) + pad;
+      pts.push([hi, bandEnd(s)], [hi, bandStart(s)]);
+    });
+    return (
+      pts
+        .map(([al, ac], i) => {
+          const p = xy(al, ac);
+          return `${i ? 'L' : 'M'}${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+        })
+        .join(' ') + ' Z'
+    );
+  };
+  const badgePos = (box: Box) => {
+    const [a, b] = box.spans[5];
+    return xy((fretCenter(a) + fretCenter(b)) / 2, across(5) - out * (pad + 11));
+  };
 
   const fretNumberPos = (f: number) =>
     vertical ? xy(fretCenter(f), padAcross / 2 + 2) : xy(fretCenter(f), across(0) + r + 16);
@@ -120,6 +152,20 @@ export default function Fretboard({ notes, boxes, labelMode, vertical }: Props) 
           >
             {f}
           </text>
+        );
+      })}
+
+      {outlines.map((box) => {
+        const color = BOX_COLORS[box.position - 1];
+        const badge = badgePos(box);
+        return (
+          <g key={`${box.position}-${box.spans[0][0]}`} className="fb-box">
+            <path d={outlinePath(box)} stroke={color} fill={color} />
+            <circle cx={badge.x} cy={badge.y} r={9} fill={color} />
+            <text x={badge.x} y={badge.y} dominantBaseline="central" textAnchor="middle">
+              {box.position}
+            </text>
+          </g>
         );
       })}
 
