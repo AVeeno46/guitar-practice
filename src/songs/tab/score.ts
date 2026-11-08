@@ -13,7 +13,7 @@ export interface Note {
   fret: number; // 뮤트(X)면 의미 없음, 이음이면 이어지는 앞 음의 프렛
   dead?: boolean; // X: 소리 없이 긁는 뮤트음
   tie?: boolean; // 이음: 앞 음을 다시 치지 않고 계속 울림. (7) 처럼 표시
-  bend?: boolean; // 벤딩(온음 올림) ↑
+  bend?: boolean; // 벤딩(온음 올림) ↑. 이음 음에 붙으면 울리는 도중 그 시점에서 올림
   slide?: boolean; // 다음 음까지 미끄러져 감 ／ ＼
   legato?: boolean; // 다음 음을 피킹 없이 해머링(h)/풀링(p)
 }
@@ -132,7 +132,7 @@ export function toggleFlag(s: TabScore, col: number, string: number, flag: NoteF
     if (cur?.tie) return setCell(s, col, string, null);
     const prev = prevNote(s, col, string);
     if (!prev || prev.note.dead) return s;
-    return setCell(s, col, string, { fret: prev.note.fret, tie: true, bend: prev.note.bend || undefined });
+    return setCell(s, col, string, { fret: prev.note.fret, tie: true });
   }
   if (!cur || cur.dead) return s;
   const next: Note = { ...cur };

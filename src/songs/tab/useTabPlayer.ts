@@ -98,14 +98,19 @@ export function useTabPlayer(
       const next = nextNote(s, col, string);
       // 이음으로 이어지는 만큼 길게 울린다
       let holdTo = col;
-      for (let k = col + 1; k < s.cols.length && s.cols[k].notes[string]?.tie; k++) holdTo = k;
+      let bendCol = note.bend ? col : -1; // 이어 울리는 도중 벤딩이 있으면 그 칸에서
+      for (let k = col + 1; k < s.cols.length && s.cols[k].notes[string]?.tie; k++) {
+        holdTo = k;
+        if (bendCol < 0 && s.cols[k].notes[string]?.bend) bendCol = k;
+      }
       const until = tick.time + (holdTo - col + 1) * secPerCol;
       pluckAt(ctx, ctx.destination, midi, tick.time, {
         level,
         dead: note.dead,
         palmMute: column.pm,
         soft: !!prev?.note.legato, // 해머링·풀링으로 이어진 음은 피킹 없이 작게
-        bendSemis: note.bend ? 2 : undefined,
+        bendSemis: bendCol >= 0 ? 2 : undefined,
+        bendAt: bendCol >= 0 ? tick.time + (bendCol - col) * secPerCol : undefined,
         until: note.dead ? undefined : until,
         glide:
           note.slide && next && !next.note.dead

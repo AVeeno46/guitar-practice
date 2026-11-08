@@ -136,7 +136,7 @@ export default function TabStaff({ score, editing, cursor, selection, loop, onCe
           score.cols[i].notes.forEach((note, s) => {
             if (!note || note.dead) return;
             const cy = yOf(s);
-            if (note.bend && !note.tie) {
+            if (note.bend) {
               const x0 = cx + 5;
               marks.push(
                 <g key={`b${i}-${s}`} className="tab-bend">

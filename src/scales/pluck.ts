@@ -31,6 +31,8 @@ export interface PluckOptions {
   palmMute?: boolean;
   /** 벤딩: 몇 반음 올릴지 (온음 = 2) */
   bendSemis?: number;
+  /** 벤딩을 시작할 시각 (없으면 치자마자) */
+  bendAt?: number;
   /** 슬라이드: start~end 사이에 toMidi 음정으로 미끄러진다 */
   glide?: { toMidi: number; start: number; end: number };
   /** 소리를 이 시각까지 울린다 (기본 1.4초) */
@@ -70,8 +72,9 @@ export function pluckAt(ctx: AudioContext, dest: AudioNode, midi: number, time: 
     osc.frequency.setValueAtTime(freq * mult, now);
     if (opts.bendSemis) {
       // 벤딩: 0.15초 동안 목표 음정까지 끌어올리고 유지
-      osc.frequency.setValueAtTime(freq * mult, now + 0.04);
-      osc.frequency.exponentialRampToValueAtTime(frequencyOf(midi + opts.bendSemis) * mult, now + 0.19);
+      const at = Math.max(now + 0.04, opts.bendAt ?? 0);
+      osc.frequency.setValueAtTime(freq * mult, at);
+      osc.frequency.exponentialRampToValueAtTime(frequencyOf(midi + opts.bendSemis) * mult, at + 0.15);
     }
     if (opts.glide) {
       const startAt = Math.max(now + 0.01, opts.glide.start);
