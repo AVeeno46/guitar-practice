@@ -1,0 +1,15 @@
+{
+  "name": "기타 연습",
+  "short_name": "기타 연습",
+  "description": "메트로놈, 연습 기록, 악보와 BPM을 한곳에서",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#16130f",
+  "theme_color": "#16130f",
+  "lang": "ko",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

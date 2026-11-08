@@ -1,0 +1,487 @@
+.songs,
+.song-detail,
+.song-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.songs-empty {
+  color: var(--muted);
+  line-height: 1.6;
+  text-align: center;
+  margin: 10vh auto 0;
+  max-width: 380px;
+}
+
+.songs-empty.small {
+  margin: 8px auto;
+  font-size: 14px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* ---------- 목록 ---------- */
+
+.song-add {
+  height: 52px;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #1b1408;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.song-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.song-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+
+.song-card:active,
+.song-add:active {
+  transform: scale(0.99);
+}
+
+.song-card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.song-card-title {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.song-card-artist,
+.song-card-bpm {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.song-card-bpm strong {
+  color: var(--text);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.song-card-sheets {
+  margin-left: 10px;
+  padding: 1px 7px;
+  border-radius: 6px;
+  background: var(--surface-2);
+}
+
+.progress {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+}
+
+.progress-fill.done {
+  background: #7fbf6a;
+}
+
+/* ---------- 상세 ---------- */
+
+.detail-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: -8px;
+}
+
+.detail-bar-title {
+  font-weight: 600;
+}
+
+.link-button {
+  background: none;
+  color: var(--accent);
+  font-size: 16px;
+  padding: 8px 2px;
+}
+
+.link-button.strong {
+  font-weight: 700;
+}
+
+.link-button.inline {
+  padding: 0;
+  font-size: inherit;
+}
+
+.link-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.detail-head h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.detail-artist {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.detail-bpms {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+}
+
+.detail-bpms > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+
+.detail-number {
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.detail-arrow {
+  color: var(--muted);
+  font-size: 22px;
+  padding-bottom: 8px;
+}
+
+.detail-note,
+.detail-history {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.detail-memo {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.6;
+  color: var(--text);
+  padding: 0 4px;
+}
+
+.sheets {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sheet {
+  margin: 0;
+}
+
+.sheet-pdf {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sheet-page {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.sheet-status {
+  color: var(--muted);
+  text-align: center;
+  font-size: 14px;
+  padding: 24px 0;
+  margin: 0;
+}
+
+/* 악보를 넘기는 동안 화면 아래에 붙어 있는 메트로놈 */
+.mini-metronome {
+  position: sticky;
+  bottom: calc(72px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: var(--surface); /* 흰 악보 위에서도 버튼이 묻히지 않게 불투명 */
+  border: 1px solid var(--line);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.mini-beats {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.mini-beat {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1.5px solid var(--line);
+}
+
+.mini-beat.accent {
+  border-color: var(--accent);
+}
+
+.mini-beat.on {
+  background: var(--text);
+}
+
+.mini-beat.accent.on {
+  background: var(--accent);
+}
+
+.mini-controls {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: auto auto 1fr auto auto 56px;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 메트로놈 탭의 .step보다 한 단계 밝게: 카드 배경과 구분되도록 */
+.mini-controls .step {
+  background: var(--line);
+}
+
+.mini-bpm {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.mini-bpm small {
+  display: block;
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  margin-top: 3px;
+}
+
+.mini-play {
+  height: 48px;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #1b1408;
+  font-size: 18px;
+}
+
+.mini-play.stop {
+  background: var(--text);
+}
+
+.mini-play:active {
+  transform: scale(0.96);
+}
+
+/* ---------- 편집 ---------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.field > span {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.field input,
+.field textarea {
+  font: inherit;
+  font-size: 16px; /* iOS 입력 시 확대 방지 */
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  width: 100%;
+}
+
+.field textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.field input:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.field-row {
+  display: flex;
+  gap: 12px;
+}
+
+.draft-sheets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.draft-sheets li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.draft-kind {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--accent);
+  flex: none;
+}
+
+.draft-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.icon-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  flex: none;
+}
+
+.icon-button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.sheet-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.file-button {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  border-radius: 12px;
+  border: 1px dashed var(--line);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.file-button:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.file-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.form-error {
+  margin: 0;
+  color: #f08a7a;
+  font-size: 14px;
+}
+
+.delete-button {
+  margin-top: 12px;
+  height: 48px;
+  border-radius: 12px;
+  background: none;
+  border: 1px solid var(--line);
+  color: #f08a7a;
+}
+
+.delete-button.armed {
+  background: #5a2620;
+  border-color: #f08a7a;
+  color: #fff;
+}
+
+@media (min-width: 900px) {
+  .mini-metronome {
+    bottom: 16px;
+  }
+}

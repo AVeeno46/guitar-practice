@@ -1,0 +1,107 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding-top: env(safe-area-inset-top);
+}
+
+.app-header {
+  padding: 18px 20px 6px;
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.app-main {
+  flex: 1;
+  padding: 12px 20px calc(96px + env(safe-area-inset-bottom));
+}
+
+.coming-soon {
+  max-width: 420px;
+  margin: 15vh auto 0;
+  text-align: center;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.coming-icon {
+  display: block;
+  font-size: 44px;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-around;
+  background: rgba(22, 19, 15, 0.94);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line);
+  padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+}
+
+.tab {
+  flex: 1;
+  max-width: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 0;
+  background: none;
+  color: var(--muted);
+  border-radius: 10px;
+}
+
+.tab.active {
+  color: var(--accent);
+}
+
+.tab-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.tab-label {
+  font-size: 11px;
+}
+
+/* 넓은 화면: 탭바를 왼쪽 사이드바로 */
+@media (min-width: 900px) {
+  .app {
+    padding-left: 120px;
+  }
+
+  .tabbar {
+    top: 0;
+    right: auto;
+    width: 120px;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 24px 10px;
+    border-top: none;
+    border-right: 1px solid var(--line);
+  }
+
+  .tab {
+    flex: none;
+    padding: 12px 0;
+  }
+
+  .app-main {
+    padding-bottom: 40px;
+  }
+
+  .app-header {
+    padding: 28px 32px 6px;
+  }
+}
