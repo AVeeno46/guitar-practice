@@ -1,46 +1,11 @@
 // 곡과 악보 파일을 기기 안의 IndexedDB에 저장한다.
 // 악보 사진·PDF는 localStorage에 담기엔 커서 Blob 그대로 별도 저장소에 둔다.
 
+import { done, openDb, request, STORES } from '../db';
 import type { SheetMeta, Song } from './types';
 
-const DB_NAME = 'guitar-practice';
-const DB_VERSION = 1;
-const SONGS = 'songs';
-const SHEETS = 'sheets';
-
-let dbPromise: Promise<IDBDatabase> | null = null;
-
-function openDb(): Promise<IDBDatabase> {
-  dbPromise ??= new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(SONGS)) db.createObjectStore(SONGS, { keyPath: 'id' });
-      if (!db.objectStoreNames.contains(SHEETS)) db.createObjectStore(SHEETS);
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => {
-      dbPromise = null;
-      reject(req.error);
-    };
-  });
-  return dbPromise;
-}
-
-function request<T>(req: IDBRequest<T>): Promise<T> {
-  return new Promise((resolve, reject) => {
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-function done(tx: IDBTransaction): Promise<void> {
-  return new Promise((resolve, reject) => {
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error ?? new Error('저장이 취소되었어요'));
-  });
-}
+const SONGS = STORES.songs;
+const SHEETS = STORES.sheets;
 
 export async function listSongs(): Promise<Song[]> {
   const db = await openDb();

@@ -9,6 +9,7 @@ import {
 } from './engine';
 import { saveLocal } from '../storage';
 import { METRONOME_STORAGE_KEY, loadMetronomeSettings, useMetronome } from './useMetronome';
+import { usePracticeActivity } from '../practice/hooks';
 import './metronome.css';
 
 const TIME_SIGNATURES = [2, 3, 4, 5, 6, 7];
@@ -32,6 +33,7 @@ function tempoName(bpm: number) {
 export default function Metronome() {
   const [settings, setSettings] = useState<MetronomeSettings>(loadMetronomeSettings);
   const { running, activeBeat, toggle } = useMetronome(settings);
+  usePracticeActivity({ key: 'metronome', kind: 'metronome', label: '메트로놈', bpm: settings.bpm });
   const tapRef = useRef<TapTempo | null>(null);
 
   useEffect(() => {

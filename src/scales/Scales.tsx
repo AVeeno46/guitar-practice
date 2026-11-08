@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import MiniMetronome from '../metronome/MiniMetronome';
 import { loadLocal, saveLocal } from '../storage';
+import { usePracticeActivity } from '../practice/hooks';
 import Fretboard, { type LabelMode } from './Fretboard';
 import {
   BOX_COLORS,
@@ -67,6 +68,13 @@ export default function Scales() {
   );
   const relType: ScaleType = type === 'minor' ? 'major' : 'minor';
   const relRoot = relativeRoot(root, type);
+  const scaleName = `${rootLabel(root, type)} ${blue ? def.name.replace('펜타토닉', '블루스') : def.name}`;
+  usePracticeActivity({
+    key: `scale:${root}:${type}:${blue ? 'b' : ''}:${position}`,
+    kind: 'scale',
+    label: position ? `${scaleName} · ${position}번 포지션` : scaleName,
+    bpm: settings.bpm,
+  });
   const startFret = boxes?.[0] ? Math.min(...boxes[0].spans.map(([a]) => a)) : null;
 
   return (
@@ -150,7 +158,7 @@ export default function Scales() {
 
       <div className="scale-summary">
         <h2>
-          {rootLabel(root, type)} {blue ? def.name.replace('펜타토닉', '블루스') : def.name}
+          {scaleName}
           {startFret !== null && <span className="scale-pos"> · {position}번 포지션 ({startFret}프렛~)</span>}
         </h2>
         <ol className="scale-notes">

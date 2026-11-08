@@ -1,0 +1,542 @@
+/* ---------- 상단 연습 표시 ---------- */
+
+.practice-start,
+.practice-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  border-radius: 18px;
+  font-size: 14px;
+}
+
+.practice-start {
+  padding: 0 14px;
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.practice-start:active {
+  transform: scale(0.97);
+}
+
+.practice-pill {
+  padding: 0 4px 0 12px;
+  background: #3a2614;
+  border: 1px solid #6b4520;
+}
+
+.practice-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #f06b4f;
+  animation: practice-blink 1.6s ease-in-out infinite;
+}
+
+.practice-dot.idle {
+  background: var(--muted);
+  animation: none;
+}
+
+@keyframes practice-blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .practice-dot {
+    animation: none;
+  }
+}
+
+.practice-time {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 42px;
+}
+
+.practice-auto {
+  font-size: 11px;
+  color: var(--accent);
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(232, 163, 61, 0.15);
+}
+
+.practice-stop {
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ---------- 종료 시트 ---------- */
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.sheet-panel {
+  width: 100%;
+  max-width: 520px;
+  max-height: 85vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 20px calc(20px + env(safe-area-inset-bottom));
+  border-radius: 20px 20px 0 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.sheet-panel h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.sheet-sub {
+  margin: -6px 0 0;
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.sheet-primary {
+  height: 50px;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #1b1408;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+@media (min-width: 900px) {
+  .sheet-backdrop {
+    align-items: center;
+  }
+
+  .sheet-panel {
+    border-radius: 20px;
+  }
+}
+
+/* ---------- 연습 항목 목록 (시트·기록 공용) ---------- */
+
+.session-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.session-items li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.session-item-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-item-meta {
+  flex: none;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 기록 탭 ---------- */
+
+.log {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.today-card,
+.log-block {
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.today-main {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.today-ring {
+  flex: none;
+}
+
+.ring-track {
+  stroke: var(--surface-2);
+}
+
+.ring-fill {
+  stroke: var(--accent);
+  transition: stroke-dasharray 400ms ease;
+}
+
+.ring-fill.done {
+  stroke: #7fbf6a;
+}
+
+.ring-min {
+  stroke: var(--text);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.today-numbers {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.today-label {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.today-live {
+  color: #f06b4f;
+}
+
+.today-minutes {
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+.today-minutes small {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+.today-status {
+  font-size: 14px;
+}
+
+.today-streak {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.goal-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.goal-title {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0 2px 0 6px;
+}
+
+.goal-title:first-child {
+  margin-left: 0;
+}
+
+.goal-chip {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.goal-chip.selected {
+  background: var(--text);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.log-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.log-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.log-stat-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.log-stat-value {
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.log-block h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.log-block-sub {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.log-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* 달력 잔디: 한 가지 색(주황)의 밝기로 연습량을 나타낸다 */
+.heatmap {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  height: auto;
+}
+
+.hm-label {
+  fill: var(--muted);
+  font-size: 9px;
+}
+
+.hm-cell {
+  cursor: pointer;
+}
+
+.hm-cell.l0 {
+  fill: #2a251e;
+}
+
+.hm-cell.l1,
+.hm-swatch.l1 {
+  fill: #4d3a1f;
+  background: #4d3a1f;
+}
+
+.hm-cell.l2,
+.hm-swatch.l2 {
+  fill: #b5772a;
+  background: #b5772a;
+}
+
+.hm-cell.l3,
+.hm-swatch.l3 {
+  fill: #e8a33d;
+  background: #e8a33d;
+}
+
+.hm-cell.selected {
+  stroke: var(--text);
+  stroke-width: 2;
+}
+
+.hm-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.hm-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  vertical-align: -1px;
+  margin-right: 3px;
+}
+
+.session-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.session-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.session-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.session-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.session-total {
+  font-weight: 700;
+}
+
+.session-tag {
+  font-size: 11px;
+  color: var(--accent);
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(232, 163, 61, 0.15);
+}
+
+.session-memo {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  padding-left: 10px;
+  border-left: 2px solid var(--line);
+}
+
+.session-memo-input {
+  font: inherit;
+  font-size: 16px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.session-actions {
+  display: flex;
+  gap: 16px;
+}
+
+.link-button.small {
+  font-size: 13px;
+  padding: 2px 0;
+}
+
+.link-button.danger {
+  color: var(--muted);
+}
+
+.link-button.danger.armed {
+  color: #f08a7a;
+}
+
+.bpm-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bpm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.bpm-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bpm-title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bpm-change {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.delta.up {
+  color: #7fbf6a;
+}
+
+.delta.down {
+  color: #f08a7a;
+}
+
+.sparkline {
+  flex: none;
+}
+
+.spark-line {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.spark-target {
+  stroke: var(--muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.spark-hit {
+  fill: transparent;
+}
+
+.spark-end {
+  fill: var(--accent);
+  stroke: var(--surface);
+  stroke-width: 2;
+  pointer-events: none;
+}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { MetronomeEngine, type MetronomeSettings } from './engine';
 import { loadLocal } from '../storage';
+import { metronomeStarted, metronomeStopped } from '../practice/tracker';
 
 export const METRONOME_STORAGE_KEY = 'gp.metronome';
 
@@ -25,6 +26,7 @@ export function useMetronome(settings: MetronomeSettings) {
   const [running, setRunning] = useState(false);
   const [activeBeat, setActiveBeat] = useState(-1);
   const rafRef = useRef<number | null>(null);
+  const startingRef = useRef(false);
 
   useEffect(() => {
     engine.update(settings);
@@ -37,6 +39,7 @@ export function useMetronome(settings: MetronomeSettings) {
 
   useEffect(
     () => () => {
+      if (engine.running) metronomeStopped();
       engine.stop();
       stopLoop();
     },
@@ -64,12 +67,20 @@ export function useMetronome(settings: MetronomeSettings) {
   const toggle = useCallback(async () => {
     if (engine.running) {
       engine.stop();
+      metronomeStopped();
       stopLoop();
       setRunning(false);
       setActiveBeat(-1);
       return;
     }
-    await engine.start();
+    if (startingRef.current) return; // 빠르게 두 번 눌러도 한 번만 시작
+    startingRef.current = true;
+    try {
+      await engine.start();
+    } finally {
+      startingRef.current = false;
+    }
+    metronomeStarted(); // 메트로놈을 켜면 연습 기록이 자동으로 시작된다
     setRunning(true);
     const loop = () => {
       const tick = engine.currentTick();

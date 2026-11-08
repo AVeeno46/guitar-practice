@@ -2,6 +2,9 @@ import { useState } from 'react';
 import Metronome from './metronome/Metronome';
 import Songs from './songs/Songs';
 import Scales from './scales/Scales';
+import Log from './practice/Log';
+import PracticeBar from './practice/PracticeBar';
+import { usePracticeInteractionListener } from './practice/hooks';
 import './app.css';
 
 type TabId = 'metronome' | 'songs' | 'log' | 'routine' | 'scales';
@@ -14,19 +17,20 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: 'scales', label: '스케일', icon: '⌗' },
 ];
 
-const COMING_SOON: Record<Exclude<TabId, 'metronome' | 'songs' | 'scales'>, string> = {
-  log: '연습 시간과 곡별 BPM 진행을 기록하는 화면이 들어올 예정이에요.',
+const COMING_SOON: Record<Exclude<TabId, 'metronome' | 'songs' | 'scales' | 'log'>, string> = {
   routine: '항목별 시간과 BPM을 정해 순서대로 진행하는 루틴 화면이 들어올 예정이에요.',
 };
 
 export default function App() {
   const [tab, setTab] = useState<TabId>('metronome');
   const current = TABS.find((t) => t.id === tab)!;
+  usePracticeInteractionListener();
 
   return (
     <div className="app">
       <header className="app-header">
         <h1>{current.label}</h1>
+        <PracticeBar />
       </header>
 
       <main className="app-main">
@@ -36,6 +40,8 @@ export default function App() {
           <Songs />
         ) : tab === 'scales' ? (
           <Scales />
+        ) : tab === 'log' ? (
+          <Log />
         ) : (
           <div className="coming-soon">
             <span className="coming-icon">{current.icon}</span>

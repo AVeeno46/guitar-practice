@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import MiniMetronome from '../metronome/MiniMetronome';
+import { usePracticeActivity } from '../practice/hooks';
 import { saveSong } from './db';
 import SheetView from './SheetView';
 import { progressOf, withPracticeBpm, type Song } from './types';
@@ -18,6 +19,7 @@ const formatDay = (date: string) => {
 
 export default function SongDetail({ song, onBack, onEdit, onChange }: Props) {
   const [saveError, setSaveError] = useState(false);
+  usePracticeActivity({ key: `song:${song.id}`, kind: 'song', label: song.title, bpm: song.practiceBpm, refId: song.id });
   // 버튼을 빠르게 연달아 눌러도 직전 값에 이어서 계산하도록 최신 곡을 따로 들고 있는다
   const latest = useRef(song);
   useEffect(() => {
