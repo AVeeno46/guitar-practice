@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { clampBpm } from '../metronome/engine';
-import { loadMetronomeSettings, useMetronome } from '../metronome/useMetronome';
+import { useEffect, useRef, useState } from 'react';
+import MiniMetronome from '../metronome/MiniMetronome';
 import { saveSong } from './db';
 import SheetView from './SheetView';
 import { progressOf, withPracticeBpm, type Song } from './types';
@@ -18,13 +17,6 @@ const formatDay = (date: string) => {
 };
 
 export default function SongDetail({ song, onBack, onEdit, onChange }: Props) {
-  // 박자·세분·볼륨은 메트로놈 탭 설정을 따르고, BPM만 이 곡의 연습 BPM을 쓴다
-  const [baseSettings] = useState(loadMetronomeSettings);
-  const settings = useMemo(
-    () => ({ ...baseSettings, bpm: song.practiceBpm }),
-    [baseSettings, song.practiceBpm],
-  );
-  const { running, activeBeat, toggle } = useMetronome(settings);
   const [saveError, setSaveError] = useState(false);
   // 버튼을 빠르게 연달아 눌러도 직전 값에 이어서 계산하도록 최신 곡을 따로 들고 있는다
   const latest = useRef(song);
@@ -32,9 +24,8 @@ export default function SongDetail({ song, onBack, onEdit, onChange }: Props) {
     latest.current = song;
   }, [song]);
 
-  const changeBpm = (delta: number) => {
+  const changeBpm = (bpm: number) => {
     const current = latest.current;
-    const bpm = clampBpm(current.practiceBpm + delta);
     if (bpm === current.practiceBpm) return;
     const next = withPracticeBpm(current, bpm);
     latest.current = next;
@@ -44,17 +35,6 @@ export default function SongDetail({ song, onBack, onEdit, onChange }: Props) {
       () => setSaveError(true),
     );
   };
-
-  // PC: 스페이스로 시작/정지
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.code !== 'Space' || e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      e.preventDefault();
-      toggle();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [toggle]);
 
   const progress = progressOf(song);
   const reached = progress !== null && progress >= 1;
@@ -129,38 +109,8 @@ export default function SongDetail({ song, onBack, onEdit, onChange }: Props) {
         </p>
       )}
 
-      {/* 악보를 넘기는 동안에도 손이 닿도록 아래에 붙어 있는 메트로놈 */}
-      <div className="mini-metronome">
-        <div className="mini-beats" aria-hidden>
-          {Array.from({ length: settings.beatsPerBar }, (_, i) => (
-            <span
-              key={i}
-              className={['mini-beat', i === 0 && settings.accentFirst ? 'accent' : '', i === activeBeat ? 'on' : ''].join(' ')}
-            />
-          ))}
-        </div>
-        <div className="mini-controls">
-          <button className="step" onClick={() => changeBpm(-5)} aria-label="연습 BPM 5 내리기">
-            −5
-          </button>
-          <button className="step" onClick={() => changeBpm(-1)} aria-label="연습 BPM 1 내리기">
-            −1
-          </button>
-          <span className="mini-bpm">
-            {song.practiceBpm}
-            <small>BPM</small>
-          </span>
-          <button className="step" onClick={() => changeBpm(1)} aria-label="연습 BPM 1 올리기">
-            +1
-          </button>
-          <button className="step" onClick={() => changeBpm(5)} aria-label="연습 BPM 5 올리기">
-            +5
-          </button>
-          <button className={`mini-play ${running ? 'stop' : ''}`} onClick={toggle} aria-label={running ? '정지' : '시작'}>
-            {running ? '■' : '▶'}
-          </button>
-        </div>
-      </div>
+      {/* 악보를 넘기는 동안에도 손이 닿도록 아래에 붙어 있는 메트로놈. BPM이 곧 이 곡의 연습 BPM */}
+      <MiniMetronome bpm={song.practiceBpm} onBpmChange={changeBpm} label="연습 BPM" />
     </section>
   );
 }

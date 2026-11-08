@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import MiniMetronome from '../metronome/MiniMetronome';
 import { loadLocal, saveLocal } from '../storage';
 import Fretboard, { type LabelMode } from './Fretboard';
 import {
@@ -21,9 +22,11 @@ interface ScaleSettings {
   labelMode: LabelMode;
   blue: boolean;
   outlines: boolean;
+  /** 스케일 연습용 BPM (곡 BPM, 메트로놈 탭 BPM과 따로 기억) */
+  bpm: number;
 }
 
-const DEFAULTS: ScaleSettings = { root: 9, type: 'minor', position: 0, labelMode: 'name', blue: false, outlines: true };
+const DEFAULTS: ScaleSettings = { root: 9, type: 'minor', position: 0, labelMode: 'name', blue: false, outlines: true, bpm: 80 };
 
 const ROOTS = Array.from({ length: 12 }, (_, i) => i);
 const LABEL_MODES: { value: LabelMode; label: string }[] = [
@@ -173,6 +176,8 @@ export default function Scales() {
           vertical={vertical}
         />
       </div>
+
+      <MiniMetronome bpm={settings.bpm} onBpmChange={(bpm) => set({ bpm })} label="스케일 연습 BPM" />
     </section>
   );
 }
