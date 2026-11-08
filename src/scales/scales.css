@@ -1,0 +1,230 @@
+.scales {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.scale-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.scale-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.scale-row-title {
+  width: 44px;
+  flex: none;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 36px;
+}
+
+.scale-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+/* 폰에서 12개 키가 6개씩 두 줄로 고르게 놓이도록 */
+.scale-chips.keys {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  max-width: 480px;
+}
+
+.scale-chip {
+  min-width: 40px;
+  height: 36px;
+  padding: 0 8px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.scale-chip.wide {
+  padding: 0 14px;
+}
+
+.scale-chip.selected {
+  background: var(--text);
+  color: var(--bg);
+  font-weight: 600;
+}
+
+.scale-chip.toggle {
+  border: 1.5px solid transparent;
+  color: var(--muted);
+}
+
+.scale-chip.toggle.on {
+  border-color: #7aa7e0;
+  color: #9cc0ee;
+}
+
+.scale-chip:active {
+  transform: scale(0.96);
+}
+
+.scale-summary h2 {
+  margin: 0 0 10px;
+  font-size: 19px;
+}
+
+.scale-pos {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.scale-notes {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+
+.scale-notes li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 46px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.scale-notes li.root {
+  border-color: var(--accent);
+}
+
+.scale-notes li.blue {
+  border-color: #7aa7e0;
+}
+
+.scale-note-name {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.scale-notes li.root .scale-note-name {
+  color: var(--accent);
+}
+
+.scale-notes li.blue .scale-note-name {
+  color: #9cc0ee;
+}
+
+.scale-note-degree {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.scale-tip {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ---------- 지판 ---------- */
+
+.fretboard-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.fretboard {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.fb-wood {
+  fill: #2b2118;
+}
+
+.fb-inlay {
+  fill: #4a3c2e;
+}
+
+.fb-fret {
+  stroke: #6b6157;
+  stroke-width: 2;
+}
+
+.fb-nut {
+  stroke: #e8e0d2;
+  stroke-width: 5;
+}
+
+.fb-string {
+  stroke: #b8ad9c;
+}
+
+.fb-label {
+  fill: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.fb-label.strong {
+  fill: var(--text);
+  font-weight: 600;
+}
+
+.fb-note {
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+.fb-note circle {
+  fill: #e9e1d3;
+  stroke: #16130f;
+  stroke-width: 1.5;
+}
+
+.fb-note text {
+  fill: #1b1408;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.fb-note.root circle {
+  fill: var(--accent);
+}
+
+.fb-note.blue circle {
+  fill: #7aa7e0;
+}
+
+.fb-note.dim {
+  opacity: 0.16;
+}
+
+.fb-note:active circle {
+  stroke: #fff;
+  stroke-width: 3;
+}
+
+@media (min-width: 700px) {
+  .scale-row-title {
+    width: 52px;
+  }
+}
