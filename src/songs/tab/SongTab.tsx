@@ -399,7 +399,7 @@ function TabEditor({ score, onScoreChange, onEditingChange, zoom, onZoomChange }
 
       <p className="tab-help">
         칸을 누르고 숫자를 입력해요. 같은 칸에서 1·2 다음 숫자를 바로 누르면 두 자리(예: 12). 한 칸에 여러 줄을 적으면 동시에 치는 음(코드)이에요.
-        h/p·슬라이드는 다음 음까지 이어지는 표시라 앞 음에 붙여요. (이음)은 앞 음을 다시 치지 않고 계속 울리는 칸이에요.
+        h/p·슬라이드는 다음 음까지 이어지는 표시라 앞 음에 붙여요. 슬라이드를 한 번 더 누르면 슬라이드 아웃(친 뒤 내려가며 소리 빼기). (이음)은 앞 음을 다시 치지 않고 계속 울리는 칸이에요.
         쉼표는 빈 칸에서 누르면 다음 음 전까지 채워져요.
       </p>
 
@@ -414,11 +414,14 @@ function TabEditor({ score, onScoreChange, onEditingChange, zoom, onZoomChange }
               ['slide', '슬라이드', '슬라이드'],
               ['bend', '벤딩', '벤딩'],
             ] as const
-          ).map(([f, text, aria]) => (
-            <button key={f} className={`pad-key tech ${selNote?.[f] ? 'on' : ''}`} onClick={() => flag(f)} aria-label={aria} aria-pressed={!!selNote?.[f]}>
-              {text}
-            </button>
-          ))}
+          ).map(([f, text, aria]) => {
+            const on = !!selNote?.[f] || (f === 'slide' && !!selNote?.slideOut);
+            return (
+              <button key={f} className={`pad-key tech ${on ? 'on' : ''}`} onClick={() => flag(f)} aria-label={aria} aria-pressed={on}>
+                {f === 'slide' && selNote?.slideOut ? '슬라이드 아웃' : text}
+              </button>
+            );
+          })}
           <button className={`pad-key tech ${selColumn.pm ? 'on' : ''}`} onClick={palmMute} aria-label="팜뮤트" aria-pressed={!!selColumn.pm}>
             P.M.
           </button>

@@ -121,10 +121,16 @@ export function useTabPlayer(
         soft: !!prev?.note.legato, // 해머링·풀링으로 이어진 음은 피킹 없이 작게
         bendSemis: bendCol >= 0 ? 2 : undefined,
         bendAt: bendCol >= 0 ? tick.time + (bendCol - col) * secPerCol : undefined,
-        until: note.dead ? undefined : until,
+        until: note.dead ? undefined : note.slideOut ? tick.time + Math.max(0.25, secPerCol * 2) : until,
         cutAt,
-        glide:
-          note.slide && next && !next.note.dead
+        glide: note.slideOut
+          ? {
+              // 슬라이드 아웃: 울리는 동안 5반음쯤 내려가며 사라진다
+              toMidi: midi - 5,
+              start: tick.time + secPerCol * 0.4,
+              end: (cutAt ?? until) - 0.01,
+            }
+          : note.slide && next && !next.note.dead
             ? {
                 toMidi: midiOf(string, next.note.fret),
                 start: tick.time + (next.col - col) * secPerCol * 0.5,

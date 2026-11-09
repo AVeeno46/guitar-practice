@@ -218,6 +218,12 @@ export default function TabStaff({ score, editing, cursor, selection, loop, onCe
                 </g>,
               );
             }
+            if (note.slideOut) {
+              // 슬라이드 아웃: 숫자 뒤로 짧게 내려가는 선
+              marks.push(
+                <line key={`so${i}-${s}`} x1={cx + 6} x2={cx + 6 + Math.min(14, col * 0.8)} y1={cy - 2} y2={cy + 4} className="tab-slide" />,
+              );
+            }
             if ((note.slide || note.legato) && !note.dead) {
               const nx = nextNote(score, i, s);
               const sameRow = nx && xOf.has(nx.col);

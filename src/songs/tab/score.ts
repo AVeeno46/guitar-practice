@@ -15,6 +15,7 @@ export interface Note {
   tie?: boolean; // 이음: 앞 음을 다시 치지 않고 계속 울림. (7) 처럼 표시
   bend?: boolean; // 벤딩(온음 올림) ↑. 이음 음에 붙으면 울리는 도중 그 시점에서 올림
   slide?: boolean; // 다음 음까지 미끄러져 감 ／ ＼
+  slideOut?: boolean; // 슬라이드 아웃: 친 뒤 줄을 따라 내려가며 소리를 뺌 (다음 음 없음)
   legato?: boolean; // 다음 음을 피킹 없이 해머링(h)/풀링(p)
 }
 
@@ -158,9 +159,9 @@ export function toggleRest(s: TabScore, col: number): TabScore {
 /** 숫자를 적는다. 이음·X였던 칸은 보통 음으로 바뀌고, 벤딩·슬라이드·레가토 표시는 유지한다 */
 export function setFret(s: TabScore, col: number, string: number, fret: number): TabScore {
   const old = s.cols[col].notes[string];
-  const keep = old && !old.dead && !old.tie ? { bend: old.bend, slide: old.slide, legato: old.legato } : {};
+  const keep = old && !old.dead && !old.tie ? { bend: old.bend, slide: old.slide, slideOut: old.slideOut, legato: old.legato } : {};
   const note: Note = { fret };
-  for (const [k, v] of Object.entries(keep)) if (v) note[k as 'bend' | 'slide' | 'legato'] = true;
+  for (const [k, v] of Object.entries(keep)) if (v) note[k as 'bend' | 'slide' | 'slideOut' | 'legato'] = true;
   return setCell(s, col, string, note);
 }
 
@@ -183,10 +184,22 @@ export function toggleFlag(s: TabScore, col: number, string: number, flag: NoteF
   }
   if (!cur || cur.dead) return s;
   const next: Note = { ...cur };
+  // 슬라이드 버튼은 세 단계: 다음 음으로 슬라이드 → 슬라이드 아웃 → 없음
+  if (flag === 'slide') {
+    if (next.slide) {
+      delete next.slide;
+      next.slideOut = true;
+    } else if (next.slideOut) {
+      delete next.slideOut;
+    } else {
+      next.slide = true;
+      delete next.legato;
+    }
+    return setCell(s, col, string, next);
+  }
   if (next[flag]) delete next[flag];
   else next[flag] = true;
   // 슬라이드와 해머링/풀링은 둘 중 하나만
-  if (flag === 'slide' && next.slide) delete next.legato;
   if (flag === 'legato' && next.legato) delete next.slide;
   return setCell(s, col, string, next);
 }
@@ -287,7 +300,7 @@ export function normalizeScore(raw: unknown): TabScore | null {
     const fret = Number(o.fret);
     if (!o.dead && !(fret >= 0 && fret <= MAX_FRET)) return null;
     const note: Note = { fret: o.dead ? 0 : Math.round(fret) };
-    for (const k of ['dead', 'tie', 'bend', 'slide', 'legato'] as const) if (o[k]) note[k] = true;
+    for (const k of ['dead', 'tie', 'bend', 'slide', 'slideOut', 'legato'] as const) if (o[k]) note[k] = true;
     return note;
   };
 

@@ -144,6 +144,8 @@ def main():
             arcs = [c for c in curves if (c['bottom'] - c['top']) < 0.3 and 3.5 < (c['x1'] - c['x0']) < 14 and top - 4 < c['top'] < bot + 4]
             heads = [c for c in curves if abs((c['x1'] - c['x0']) - 2.2) < 0.2 and abs((c['bottom'] - c['top']) - 1.4) < 0.2 and top - 12 < c['top'] < bot]
             diags = [l for l in lines if abs(l['x0'] - l['x1']) > 1 and abs(l['top'] - l['bottom']) > 1 and top - 2 < l['top'] and l['bottom'] < bot + 2]
+            # 슬라이드 아웃: 숫자 바로 뒤의 짧은 가로선 (오선 줄보다 1.7쯤 위)
+            outs = [l for l in lines if abs(l['top'] - l['bottom']) < 0.5 and 4 < l['x1'] - l['x0'] < 20 and top - 3 < l['top'] < bot + 3]
             notechars = [c for c in chars if 5.5 < c['size'] < 6.5 and top - 4 < c['top'] < bot + 2]
             by_string = defaultdict(list)
             for c in notechars:
@@ -248,6 +250,7 @@ def main():
                 bar['arcs_in'] = [a for a in arcs if a['x0'] <= x0 + 2 and a['x1'] > x0]  # 앞 줄에서 넘어온 호의 꼬리
                 bar['heads'] = [h for h in heads if inb(h['x0'])]
                 bar['diags'] = [d for d in diags if inb(min(d['x0'], d['x1']))]
+                bar['outs'] = [o for o in outs if inb(o['x0'])]
                 bar['string_of'] = string_of
                 bar['line_y'] = line_y
                 bars.append(bar)
@@ -367,6 +370,23 @@ def main():
                 n.pop('legato', None)
                 slide_count += 1
 
+    # ---- 슬라이드 아웃 ----
+    out_count = 0
+    for bi, b in enumerate(bars):
+        so = b['string_of']
+        evs = note_events(bi)
+        for o in b['outs']:
+            s, dist = so(o['top'] + 1.7)
+            src = [e for e in evs if e['x'] <= o['x0'] + 1 and s in e['notes']]
+            if not src:
+                continue
+            src = max(src, key=lambda e: e['x'])
+            n = cols[src['col']]['notes'][s]
+            if n and not n.get('dead') and not n.get('slideOut'):
+                n['slideOut'] = True
+                n.pop('slide', None)
+                out_count += 1
+
     # 이음으로 표시된 칸 프렛 정리 (괄호 숫자가 따로 적혀 있어도 이음으로)
     for i, c in enumerate(cols):
         for s, n in enumerate(c['notes']):
@@ -393,6 +413,7 @@ def main():
         'bends': bend_count,
         'bend_bars': bend_bars,
         'slides': slide_count,
+        'slide_outs': out_count,
         'pm_cols': sum(1 for c in cols if c.get('pm')),
         'rests': sum(1 for c in cols if c.get('rest')),
         'tempos': [(i + 1, b['tempo']) for i, b in enumerate(bars) if b['tempo']],
