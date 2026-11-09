@@ -385,3 +385,26 @@
 .tabstaff {
   overflow-x: auto;
 }
+
+/* 클릭 간격: 끔 / 1 / 2 / 4 */
+.click-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 4px 0 10px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.click-choice > span {
+  font-size: 13px;
+  color: var(--muted);
+  margin-right: 2px;
+}
+
+.click-choice .scale-chip {
+  min-width: 34px;
+  height: 30px;
+  padding: 0 8px;
+}

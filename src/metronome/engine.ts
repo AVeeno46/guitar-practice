@@ -43,6 +43,8 @@ export class MetronomeEngine {
   private count = 0;
   private onSchedule: ScheduleListener | null = null;
   private tempoScale: TempoScale | null = null;
+  /** 한 박에 클릭을 몇 번 낼지 (null이면 세분마다). 박 나눔(subdivision)은 그대로 두고 소리만 줄인다 */
+  private clicksPerBeat: number | null = null;
   private queue: Tick[] = [];
   private settings: MetronomeSettings;
   running = false;
@@ -101,6 +103,10 @@ export class MetronomeEngine {
     this.onSchedule = listener;
   }
 
+  setClicksPerBeat(n: number | null) {
+    this.clicksPerBeat = n;
+  }
+
   setTempoScale(scale: TempoScale | null) {
     this.tempoScale = scale;
   }
@@ -118,7 +124,8 @@ export class MetronomeEngine {
   private scheduler() {
     if (!this.ctx) return;
     while (this.nextTime < this.ctx.currentTime + SCHEDULE_AHEAD_S) {
-      this.scheduleClick(this.beat, this.sub, this.nextTime);
+      const every = this.clicksPerBeat ? Math.max(1, Math.round(this.settings.subdivision / this.clicksPerBeat)) : 1;
+      if (this.sub % every === 0) this.scheduleClick(this.beat, this.sub, this.nextTime);
       const tick = { beat: this.beat, sub: this.sub, index: this.count++, time: this.nextTime };
       this.queue.push(tick);
       this.onSchedule?.(tick, this.ctx);

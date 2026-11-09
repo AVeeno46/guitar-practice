@@ -15,7 +15,7 @@ const PLAY_OPTIONS_KEY = 'gp.tabPlay';
 const ZOOM_KEY = 'gp.tabZoom';
 /** 악보 크기 기본값: PC처럼 넓은 화면은 크게 */
 const defaultZoom = () => (window.matchMedia('(min-width: 900px)').matches ? 1.4 : 1);
-const PLAY_DEFAULTS: PlayOptions = { sound: true, click: true, speedUp: false };
+const PLAY_DEFAULTS: PlayOptions = { sound: true, click: true, clicks: 1, speedUp: false };
 
 interface Props {
   song: Song;
@@ -198,6 +198,7 @@ export default function SongDetail({ song, onBack, onEdit, onChange }: Props) {
           subdivision={score?.notesPerBeat}
           beatsPerBar={score?.beatsPerBar}
           click={score ? playOptions.click : true}
+          clicksPerBeat={score ? Math.min(playOptions.clicks ?? 1, score.notesPerBeat) : undefined}
           onTick={score ? player.onTick : undefined}
           onSchedule={score ? player.onSchedule : undefined}
           tempoScale={score ? player.tempoScale : undefined}

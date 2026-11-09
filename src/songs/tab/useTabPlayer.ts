@@ -10,7 +10,8 @@ export interface LoopRange {
 
 export interface PlayOptions {
   sound: boolean; // TAB 음을 기타 소리로
-  click: boolean; // 메트로놈 클릭
+  click: boolean; // 메트로놈 클릭 켜기
+  clicks?: number; // 한 박에 클릭 몇 번 (1, 2, 4 …). 없으면 1
   speedUp: boolean; // 한 번 돌 때마다 BPM 올리기
 }
 

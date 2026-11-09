@@ -21,8 +21,17 @@ export const loadMetronomeSettings = () =>
  * 메트로놈 엔진을 화면에 연결한다.
  * 설정이 바뀌면 재생 중에도 바로 반영되고, 화면을 떠나면 소리가 멈춘다.
  */
-export function useMetronome(settings: MetronomeSettings, onSchedule?: ScheduleListener, tempoScale?: TempoScale) {
+export function useMetronome(
+  settings: MetronomeSettings,
+  onSchedule?: ScheduleListener,
+  tempoScale?: TempoScale,
+  clicksPerBeat?: number,
+) {
   const [engine] = useState(() => new MetronomeEngine(settings));
+
+  useEffect(() => {
+    engine.setClicksPerBeat(clicksPerBeat ?? null);
+  }, [engine, clicksPerBeat]);
 
   useEffect(() => {
     engine.setTempoScale(tempoScale ?? null);

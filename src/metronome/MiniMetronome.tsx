@@ -16,6 +16,8 @@ interface Props {
   beatsPerBar?: number;
   /** false면 클릭 소리를 끈다 (TAB 소리만 듣고 싶을 때) */
   click?: boolean;
+  /** 한 박에 클릭 몇 번 (subdivision보다 적게 하면 박 나눔은 유지하고 소리만 줄인다) */
+  clicksPerBeat?: number;
   /** 소리를 예약할 때마다 불린다 (TAB 음을 같은 시계에 맞춰 예약) */
   onSchedule?: ScheduleListener;
   /** 소리 번호마다 템포 배율 (TAB 악보 중간 템포 변경) */
@@ -45,6 +47,7 @@ export default function MiniMetronome({
   click = true,
   onSchedule,
   tempoScale,
+  clicksPerBeat,
 }: Props) {
   const [base] = useState(loadMetronomeSettings);
   const settings = useMemo(
@@ -57,7 +60,7 @@ export default function MiniMetronome({
     }),
     [base, bpm, subdivision, beatsPerBar, click],
   );
-  const { running, activeBeat, tickIndex, toggle } = useMetronome(settings, onSchedule, tempoScale);
+  const { running, activeBeat, tickIndex, toggle } = useMetronome(settings, onSchedule, tempoScale, clicksPerBeat);
 
   const onTickRef = useRef(onTick);
   useEffect(() => {

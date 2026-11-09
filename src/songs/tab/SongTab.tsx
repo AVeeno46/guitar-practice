@@ -147,9 +147,23 @@ function TabPractice({
         <button className={`scale-chip wide toggle ${options.sound ? 'on' : ''}`} onClick={() => toggle('sound')} aria-pressed={options.sound}>
           ♪ 음 소리
         </button>
-        <button className={`scale-chip wide toggle ${options.click ? 'on' : ''}`} onClick={() => toggle('click')} aria-pressed={options.click}>
-          클릭
-        </button>
+        <div className="click-choice" role="group" aria-label="메트로놈 클릭">
+          <span>클릭</span>
+          {[0, ...clickChoices(score.notesPerBeat)].map((n) => {
+            const on = n === 0 ? !options.click : options.click && (options.clicks ?? 1) === n;
+            return (
+              <button
+                key={n}
+                className={`scale-chip ${on ? 'selected' : ''}`}
+                onClick={() => onOptionsChange({ ...options, click: n !== 0, clicks: n || options.clicks })}
+                aria-pressed={on}
+                aria-label={n === 0 ? '클릭 끄기' : `한 박에 클릭 ${n}번`}
+              >
+                {n === 0 ? '끔' : n}
+              </button>
+            );
+          })}
+        </div>
         <button className={`scale-chip wide toggle ${options.speedUp ? 'on' : ''}`} onClick={() => toggle('speedUp')} aria-pressed={options.speedUp}>
           반복마다 +{SPEED_STEP} BPM
         </button>
@@ -616,4 +630,9 @@ function ZoomControl({ zoom, onChange }: { zoom: number; onChange: (z: number) =
       </button>
     </div>
   );
+}
+
+/** 한 박을 나누는 칸 수로 고를 수 있는 클릭 간격: 16분음표 격자면 1·2·4, 셋잇단이면 1·3 */
+function clickChoices(npb: number): number[] {
+  return [1, 2, 3, 4].filter((n) => n <= npb && npb % n === 0);
 }
