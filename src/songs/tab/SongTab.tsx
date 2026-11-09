@@ -12,11 +12,13 @@ import {
   midiOf,
   perBar,
   reshape,
+  restCovering,
   setCell,
   setFret,
   setTempoMark,
   toggleFlag,
   togglePalmMute,
+  toggleRest,
   type NoteFlag,
   type NotesPerBeat,
   type TabScore,
@@ -38,13 +40,23 @@ interface Props {
   player: { running: boolean; cursor: number; countIn: number; pass: number; scale: number };
   targetBpm: number | null;
   practiceBpm: number;
+  zoom: number;
+  onZoomChange: (zoom: number) => void;
 }
 
 const BEAT_CHOICES = [2, 3, 4, 5, 6, 7];
 const RHYTHM_CHOICES: NotesPerBeat[] = [1, 2, 3, 4];
 const TWO_DIGIT_MS = 1500;
-/** PC 단축키: X 뮤트, T 이음, H 해머링/풀링, S 슬라이드, B 벤딩, M 팜뮤트 */
-const TECH_KEYS: Record<string, NoteFlag | 'pm'> = { x: 'dead', t: 'tie', h: 'legato', s: 'slide', b: 'bend', m: 'pm' };
+/** PC 단축키: X 뮤트, T 이음, H 해머링/풀링, S 슬라이드, B 벤딩, M 팜뮤트, R 쉼표 */
+const TECH_KEYS: Record<string, NoteFlag | 'pm' | 'rest'> = {
+  x: 'dead',
+  t: 'tie',
+  h: 'legato',
+  s: 'slide',
+  b: 'bend',
+  m: 'pm',
+  r: 'rest',
+};
 const AUTO_ADVANCE_WAIT_MS = 900;
 
 export default function SongTab(props: Props) {
@@ -105,6 +117,8 @@ function TabPractice({
   player,
   targetBpm,
   practiceBpm,
+  zoom,
+  onZoomChange,
 }: Props & { score: TabScore }) {
   const tapBar = (bar: number) => {
     if (!loop || loop.from !== loop.to) onLoopChange({ from: bar, to: bar });
@@ -123,6 +137,7 @@ function TabPractice({
     <div className="tab-section">
       <div className="tab-toolbar">
         <h3>TAB 악보</h3>
+        <ZoomControl zoom={zoom} onChange={onZoomChange} />
         <button className="link-button" onClick={() => onEditingChange(true)}>
           ✎ 편집
         </button>
@@ -166,14 +181,14 @@ function TabPractice({
         ) : null}
       </div>
 
-      <TabStaff score={score} editing={false} cursor={player.cursor} selection={null} loop={loop} onBarTap={tapBar} />
+      <TabStaff score={score} editing={false} cursor={player.cursor} selection={null} loop={loop} onBarTap={tapBar} zoom={zoom} />
     </div>
   );
 }
 
 // ---------- 편집 ----------
 
-function TabEditor({ score, onScoreChange, onEditingChange }: Props & { score: TabScore }) {
+function TabEditor({ score, onScoreChange, onEditingChange, zoom, onZoomChange }: Props & { score: TabScore }) {
   const [sel, setSel] = useState<Cell>({ col: 0, string: 0 });
   const [autoAdvance, setAutoAdvance] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -189,6 +204,7 @@ function TabEditor({ score, onScoreChange, onEditingChange }: Props & { score: T
   const n = perBar(score);
   const selColumn = score.cols[Math.min(sel.col, score.cols.length - 1)];
   const selNote = selColumn.notes[sel.string];
+  const inRest = !!restCovering(score, Math.min(sel.col, score.cols.length - 1));
   const [tempoSheet, setTempoSheet] = useState(false);
   const bar = Math.floor(sel.col / n);
   const beat = Math.floor((sel.col % n) / score.notesPerBeat);
@@ -278,6 +294,14 @@ function TabEditor({ score, onScoreChange, onEditingChange }: Props & { score: T
     if (next !== s) commit(next);
   };
 
+  const rest = () => {
+    clearAdvance();
+    lastInput.current = null;
+    const { score: s, sel: c } = live.current;
+    const next = toggleRest(s, c.col);
+    if (next !== s) commit(next);
+  };
+
   const palmMute = () => {
     const { score: s, sel: c } = live.current;
     commit(togglePalmMute(s, c.col));
@@ -323,6 +347,7 @@ function TabEditor({ score, onScoreChange, onEditingChange }: Props & { score: T
         e.preventDefault();
         const k = TECH_KEYS[e.key.toLowerCase()];
         if (k === 'pm') palmMute();
+        else if (k === 'rest') rest();
         else flag(k);
       } else if (e.key === 'Escape') {
         onEditingChange(false);
@@ -343,6 +368,7 @@ function TabEditor({ score, onScoreChange, onEditingChange }: Props & { score: T
     <div className="tab-section editing">
       <div className="tab-toolbar">
         <h3>TAB 편집</h3>
+        <ZoomControl zoom={zoom} onChange={onZoomChange} />
         <button className="link-button strong" onClick={() => onEditingChange(false)}>
           완료
         </button>
@@ -369,11 +395,12 @@ function TabEditor({ score, onScoreChange, onEditingChange }: Props & { score: T
         </button>
       </div>
 
-      <TabStaff score={score} editing cursor={-1} selection={sel} loop={null} onCellTap={selectCell} />
+      <TabStaff score={score} editing cursor={-1} selection={sel} loop={null} onCellTap={selectCell} zoom={zoom} />
 
       <p className="tab-help">
         칸을 누르고 숫자를 입력해요. 같은 칸에서 1·2 다음 숫자를 바로 누르면 두 자리(예: 12). 한 칸에 여러 줄을 적으면 동시에 치는 음(코드)이에요.
         h/p·슬라이드는 다음 음까지 이어지는 표시라 앞 음에 붙여요. (이음)은 앞 음을 다시 치지 않고 계속 울리는 칸이에요.
+        쉼표는 빈 칸에서 누르면 다음 음 전까지 채워져요.
       </p>
 
       {/* 아래에 붙어 있는 입력 패드 */}
@@ -394,6 +421,9 @@ function TabEditor({ score, onScoreChange, onEditingChange }: Props & { score: T
           ))}
           <button className={`pad-key tech ${selColumn.pm ? 'on' : ''}`} onClick={palmMute} aria-label="팜뮤트" aria-pressed={!!selColumn.pm}>
             P.M.
+          </button>
+          <button className={`pad-key tech ${inRest ? 'on' : ''}`} onClick={rest} aria-label="쉼표" aria-pressed={inRest}>
+            쉼표
           </button>
         </div>
         <div className="pad-grid">
@@ -562,6 +592,25 @@ function TempoSheet({
           적용
         </button>
       </div>
+    </div>
+  );
+}
+
+export const ZOOM_MIN = 0.8;
+export const ZOOM_MAX = 2;
+
+/** 악보 크기 −/+ (10%씩) */
+function ZoomControl({ zoom, onChange }: { zoom: number; onChange: (z: number) => void }) {
+  const step = (d: number) => onChange(Math.round(Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom + d)) * 10) / 10);
+  return (
+    <div className="zoom-control" role="group" aria-label="악보 크기">
+      <button onClick={() => step(-0.1)} disabled={zoom <= ZOOM_MIN} aria-label="악보 작게">
+        −
+      </button>
+      <span>{Math.round(zoom * 100)}%</span>
+      <button onClick={() => step(0.1)} disabled={zoom >= ZOOM_MAX} aria-label="악보 크게">
+        +
+      </button>
     </div>
   );
 }

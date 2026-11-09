@@ -37,6 +37,8 @@ export interface PluckOptions {
   glide?: { toMidi: number; start: number; end: number };
   /** 소리를 이 시각까지 울린다 (기본 1.4초) */
   until?: number;
+  /** 이 시각에 소리를 끊는다 (쉼표, 같은 줄의 다음 음) */
+  cutAt?: number;
 }
 
 /**
@@ -47,12 +49,21 @@ export function pluckAt(ctx: AudioContext, dest: AudioNode, midi: number, time: 
   const now = time;
   const level = (opts.level ?? 1) * (opts.soft ? 0.55 : 1) * (opts.dead ? 0.6 : 1);
   const decay = opts.dead ? 0.05 : opts.palmMute ? 0.22 : 1.4;
-  const end = Math.max(now + decay, opts.until ?? 0);
+  let end = Math.max(now + decay, opts.until ?? 0);
+  const cut = opts.cutAt !== undefined && opts.cutAt > now + 0.02 && opts.cutAt < end ? opts.cutAt : null;
+  if (cut !== null) end = cut + 0.03;
   const freq = frequencyOf(midi);
   const out = ctx.createGain();
   out.gain.setValueAtTime(0.0001, now);
   out.gain.exponentialRampToValueAtTime(0.35 * level, now + (opts.soft ? 0.02 : 0.005));
-  out.gain.exponentialRampToValueAtTime(0.0001, end);
+  if (cut !== null) {
+    // 끊는 시각까지 자연스럽게 줄다가 짧게 닫는다
+    const natural = Math.max(now + 0.03, Math.min(cut, now + decay));
+    out.gain.exponentialRampToValueAtTime(Math.max(0.0001, 0.35 * level * Math.exp(-3 * (natural - now) / decay)), natural);
+    out.gain.exponentialRampToValueAtTime(0.0001, end);
+  } else {
+    out.gain.exponentialRampToValueAtTime(0.0001, end);
+  }
 
   // 밝은 어택이 금방 둥글어지도록 저역 통과 필터를 닫아 간다. 팜뮤트·뮤트음은 처음부터 먹먹하게
   const filter = ctx.createBiquadFilter();

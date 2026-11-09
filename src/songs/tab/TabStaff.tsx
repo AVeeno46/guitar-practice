@@ -16,6 +16,8 @@ interface Props {
   loop: { from: number; to: number } | null;
   onCellTap?: (cell: Cell) => void;
   onBarTap?: (bar: number) => void;
+  /** 확대 배율 (1 = 기본). 줄바꿈도 이 배율에 맞춰 다시 계산한다 */
+  zoom?: number;
 }
 
 const LABEL_W = 16;
@@ -51,6 +53,76 @@ function TempoMark({ x, y, bpm }: { x: number; y: number; bpm: number }) {
   );
 }
 
+type RestKind = 'whole' | 'half' | 'quarter' | 'eighth' | 'sixteenth';
+
+/**
+ * 쉼표 길이(칸)를 악보에서 쓰는 쉼표 기호들로 나눈다.
+ * 박 경계에 맞춰 큰 것부터: 온(한 마디 전체) → 2분 → 4분 → 8분 → 16분.
+ */
+function splitRest(start: number, length: number, npb: number, perBarCols: number) {
+  const out: { col: number; kind: RestKind }[] = [];
+  const sizes: [RestKind, number][] = [
+    ['half', npb * 2],
+    ['quarter', npb],
+    ['eighth', npb / 2],
+    ['sixteenth', npb / 4],
+  ];
+  let p = start;
+  const end = start + length;
+  if (p % perBarCols === 0 && length >= perBarCols) {
+    out.push({ col: p, kind: 'whole' });
+    p += perBarCols;
+  }
+  while (p < end) {
+    const inBar = p % perBarCols;
+    const fit = sizes.find(([, n]) => Number.isInteger(n) && n >= 1 && inBar % n === 0 && p + n <= end);
+    if (!fit) {
+      // 셋잇단처럼 딱 맞는 기호가 없으면 칸마다 8분쉼표 모양으로
+      out.push({ col: p, kind: 'eighth' });
+      p += 1;
+      continue;
+    }
+    out.push({ col: p, kind: fit[0] });
+    p += fit[1];
+  }
+  return out;
+}
+
+/** 쉼표 기호. (x, mid)는 칸 가운데와 오선 가운데, g는 줄 간격 */
+function RestGlyph({ kind, x, mid, g }: { kind: RestKind; x: number; mid: number; g: number }) {
+  if (kind === 'whole' || kind === 'half') {
+    // 온쉼표는 가운데 줄에 매달리고, 2분쉼표는 그 아래 줄 위에 얹힌다
+    const y = kind === 'whole' ? mid - g / 2 : mid + g / 2 - 3.5;
+    return <rect x={x - 4.5} y={y} width={9} height={3.5} className="tab-rest" />;
+  }
+  if (kind === 'quarter') {
+    const h = g * 1.6;
+    const t = mid - h / 2;
+    return (
+      <path
+        className="tab-rest stroke"
+        d={`M${x - 1.5},${t} L${x + 2.5},${t + h * 0.3} L${x - 1.5},${t + h * 0.55} L${x + 2.5},${t + h * 0.8} Q${x - 3},${t + h * 0.72} ${x},${t + h}`}
+      />
+    );
+  }
+  const flags = kind === 'eighth' ? 1 : 2;
+  const top = mid - g * 0.55;
+  return (
+    <g className="tab-rest">
+      {Array.from({ length: flags }, (_, k) => {
+        const y = top + k * g * 0.55;
+        return (
+          <g key={k}>
+            <circle cx={x - 2.2 - k * 0.8} cy={y} r={1.7} />
+            <path className="stroke" d={`M${x - 2.2 - k * 0.8},${y + 0.8} Q${x + 0.5},${y + 1.6} ${x + 2.8 - k * 0.8},${y - 0.8}`} />
+          </g>
+        );
+      })}
+      <line className="stroke" x1={x + 2.8} y1={top - 0.8} x2={x - 0.5} y2={top + g * (flags === 1 ? 1.3 : 1.85)} />
+    </g>
+  );
+}
+
 const labelOf = (n: Note) => (n.dead ? 'X' : n.tie ? `(${n.fret})` : String(n.fret));
 
 /**
@@ -58,8 +130,9 @@ const labelOf = (n: Note) => (n.dead ? 'X' : n.tie ? `(${n.fret})` : String(n.fr
  * 그 아래 P.M. 표시. 음에는 벤딩 화살표, 슬라이드 선, 해머링·풀링 호(h/p)를 그린다.
  * 편집 중에는 칸이 커지고, 칸을 눌러 고른다.
  */
-export default function TabStaff({ score, editing, cursor, selection, loop, onCellTap, onBarTap }: Props) {
-  const [ref, width] = useWidth();
+export default function TabStaff({ score, editing, cursor, selection, loop, onCellTap, onBarTap, zoom = 1 }: Props) {
+  const [ref, rawWidth] = useWidth();
+  const width = rawWidth / zoom; // 확대한 만큼 좁은 폭에 그린 뒤 키운다
   const n = perBar(score);
   const bars = barCount(score);
   const npb = score.notesPerBeat;
@@ -192,8 +265,8 @@ export default function TabStaff({ score, editing, cursor, selection, loop, onCe
               rowRefs.current[r] = el;
             }}
             className="tab-row"
-            width={svgW}
-            height={rowH}
+            width={svgW * zoom}
+            height={rowH * zoom}
             viewBox={`0 0 ${svgW} ${rowH}`}
           >
             {STRING_NAMES.map((name, s) => (
@@ -302,6 +375,16 @@ export default function TabStaff({ score, editing, cursor, selection, loop, onCe
                   })}
                 </g>
               );
+            })}
+
+            {/* 쉼표 */}
+            {idxs.map((i) => {
+              const len = score.cols[i].rest;
+              if (!len) return null;
+              const mid = (yOf(2) + yOf(3)) / 2;
+              return splitRest(i, len, npb, n)
+                .filter((r) => xOf.has(r.col))
+                .map((r) => <RestGlyph key={`r${r.col}`} kind={r.kind} x={xOf.get(r.col)!} mid={mid} g={lineGap} />);
             })}
 
             {marks}

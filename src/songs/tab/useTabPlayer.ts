@@ -104,6 +104,16 @@ export function useTabPlayer(
         if (bendCol < 0 && s.cols[k].notes[string]?.bend) bendCol = k;
       }
       const until = tick.time + (holdTo - col + 1) * secPerCol;
+      // 쉼표가 나오거나 같은 줄을 다시 치면 소리를 끊는다
+      let cutCol = -1;
+      for (let k = holdTo + 1; k < s.cols.length && k - col <= s.notesPerBeat * s.beatsPerBar * 2; k++) {
+        const nk = s.cols[k].notes[string];
+        if (s.cols[k].rest || (nk && !nk.tie && !(note.slide || note.legato))) {
+          cutCol = k;
+          break;
+        }
+      }
+      const cutAt = cutCol >= 0 ? tick.time + (cutCol - col) * secPerCol : undefined;
       pluckAt(ctx, ctx.destination, midi, tick.time, {
         level,
         dead: note.dead,
@@ -112,6 +122,7 @@ export function useTabPlayer(
         bendSemis: bendCol >= 0 ? 2 : undefined,
         bendAt: bendCol >= 0 ? tick.time + (bendCol - col) * secPerCol : undefined,
         until: note.dead ? undefined : until,
+        cutAt,
         glide:
           note.slide && next && !next.note.dead
             ? {

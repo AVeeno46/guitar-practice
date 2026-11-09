@@ -272,6 +272,8 @@ def main():
                 c['notes'][s] = dict(n)
             if e.get('pm'):
                 c['pm'] = True
+            if e['rest']:
+                c['rest'] = e['dur']  # 쉼표: 시작 칸에 길이(칸 수)
             ev_at[(bi, ei)] = base + pos
             e['col'] = base + pos
             pos += e['dur']
@@ -392,6 +394,7 @@ def main():
         'bend_bars': bend_bars,
         'slides': slide_count,
         'pm_cols': sum(1 for c in cols if c.get('pm')),
+        'rests': sum(1 for c in cols if c.get('rest')),
         'tempos': [(i + 1, b['tempo']) for i, b in enumerate(bars) if b['tempo']],
         'problems': problems,
     }

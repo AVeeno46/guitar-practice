@@ -24,6 +24,7 @@ export interface Column {
   notes: Cell[];
   pm?: boolean; // 팜뮤트 P.M.
   tempo?: number; // 이 칸부터 템포가 바뀜 (원곡 BPM 기준)
+  rest?: number; // 이 칸부터 쉼표 (길이 = 칸 수). 쉼표 동안은 소리가 끊긴다
 }
 
 export interface TabScore {
@@ -52,7 +53,7 @@ export const perBar = (s: TabScore) => s.beatsPerBar * s.notesPerBeat;
 export const barCount = (s: TabScore) => s.cols.length / perBar(s);
 const hasNotes = (c: Column) => c.notes.some((n) => n !== null);
 /** 음도, 팜뮤트도, 템포 표시도 없는 칸 */
-export const isBlankColumn = (c: Column) => !hasNotes(c) && !c.pm && !c.tempo;
+export const isBlankColumn = (c: Column) => !hasNotes(c) && !c.pm && !c.tempo && !c.rest;
 
 const copyColumn = (c: Column): Column => ({ ...c, notes: c.notes.map((n) => (n ? { ...n } : null)) });
 
@@ -102,8 +103,54 @@ function withColumn(s: TabScore, col: number, fn: (c: Column) => Column): TabSco
 }
 
 export function setCell(s: TabScore, col: number, string: number, cell: Cell): TabScore {
-  return withColumn(s, col, (c) => {
+  const next = withColumn(s, col, (c) => {
     c.notes[string] = cell;
+    return c;
+  });
+  return cell ? cutRestAt(next, col) : next;
+}
+
+/** col을 덮고 있는 쉼표 (시작 칸과 길이) */
+export function restCovering(s: TabScore, col: number): { col: number; length: number } | null {
+  for (let i = col; i >= 0 && col - i < perBar(s) * 4; i--) {
+    const r = s.cols[i].rest;
+    if (r) return i + r > col ? { col: i, length: r } : null;
+  }
+  return null;
+}
+
+/** 음을 적은 칸에 쉼표가 걸쳐 있으면 쉼표를 그 앞까지로 줄인다 */
+function cutRestAt(s: TabScore, col: number): TabScore {
+  const r = restCovering(s, col);
+  if (!r) return s;
+  return withColumn(s, r.col, (c) => {
+    if (col > r.col) c.rest = col - r.col;
+    else delete c.rest;
+    return c;
+  });
+}
+
+/**
+ * 쉼표를 켜고 끈다.
+ * - 쉼표가 걸친 칸이면 그 쉼표를 지운다
+ * - 빈 칸이면 다음 음(또는 마디 끝)까지 쉼표로 채운다
+ * - 음이 있는 칸이면 아무것도 안 한다
+ */
+export function toggleRest(s: TabScore, col: number): TabScore {
+  const cover = restCovering(s, col);
+  if (cover) {
+    return withColumn(s, cover.col, (c) => {
+      delete c.rest;
+      return c;
+    });
+  }
+  if (hasNotes(s.cols[col])) return s;
+  const barEnd = (Math.floor(col / perBar(s)) + 1) * perBar(s);
+  let end = col + 1;
+  while (end < barEnd && !hasNotes(s.cols[end]) && !s.cols[end].rest) end++;
+  const next = s;
+  return withColumn(next, col, (c) => {
+    c.rest = end - col;
     return c;
   });
 }
@@ -202,7 +249,13 @@ export function reshape(s: TabScore, beatsPerBar: number, notesPerBeat: NotesPer
       if (isBlankColumn(s.cols[i])) continue;
       const pos = (i * notesPerBeat) / s.notesPerBeat;
       if (Math.abs(pos - Math.round(pos)) > 1e-9) return null;
-      next[Math.round(pos)] = copyColumn(s.cols[i]);
+      const moved = copyColumn(s.cols[i]);
+      if (moved.rest) {
+        const len = (moved.rest * notesPerBeat) / s.notesPerBeat;
+        if (Math.abs(len - Math.round(len)) > 1e-9) return null;
+        moved.rest = Math.round(len);
+      }
+      next[Math.round(pos)] = moved;
     }
     cols = next;
   }
@@ -248,6 +301,7 @@ export function normalizeScore(raw: unknown): TabScore | null {
       const o = c as Record<string, unknown>;
       if (o.pm) col.pm = true;
       if (Number(o.tempo) > 0) col.tempo = Math.round(Number(o.tempo));
+      if (Number(o.rest) > 0) col.rest = Math.round(Number(o.rest));
     }
     return col;
   });

@@ -430,3 +430,10 @@
   border-color: #f08a7a;
   color: #fff;
 }
+
+/* TAB 악보가 있는 곡은 PC에서 넓게 */
+@media (min-width: 900px) {
+  .song-detail.has-tab {
+    max-width: 1400px;
+  }
+}

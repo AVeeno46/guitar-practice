@@ -12,6 +12,9 @@ import { barCount, normalizeScore, type TabScore } from './tab/score';
 import { SPEED_STEP, useTabPlayer, type LoopRange, type PlayOptions } from './tab/useTabPlayer';
 
 const PLAY_OPTIONS_KEY = 'gp.tabPlay';
+const ZOOM_KEY = 'gp.tabZoom';
+/** 악보 크기 기본값: PC처럼 넓은 화면은 크게 */
+const defaultZoom = () => (window.matchMedia('(min-width: 900px)').matches ? 1.4 : 1);
 const PLAY_DEFAULTS: PlayOptions = { sound: true, click: true, speedUp: false };
 
 interface Props {
@@ -68,6 +71,11 @@ export default function SongDetail({ song, onBack, onEdit, onChange }: Props) {
   const [loopRaw, setLoop] = useState<LoopRange | null>(null);
   const loop = score && loopRaw && loopRaw.to < barCount(score) ? loopRaw : null;
   const [playOptions, setPlayOptionsState] = useState<PlayOptions>(() => loadLocal(PLAY_OPTIONS_KEY, PLAY_DEFAULTS));
+  const [zoom, setZoomState] = useState<number>(() => loadLocal(ZOOM_KEY, { zoom: defaultZoom() }).zoom);
+  const setZoom = (z: number) => {
+    setZoomState(z);
+    saveLocal(ZOOM_KEY, { zoom: z });
+  };
   const setPlayOptions = (o: PlayOptions) => {
     setPlayOptionsState(o);
     saveLocal(PLAY_OPTIONS_KEY, o);
@@ -88,7 +96,7 @@ export default function SongDetail({ song, onBack, onEdit, onChange }: Props) {
   const history = song.bpmLog.slice(-6);
 
   return (
-    <section className="song-detail">
+    <section className={`song-detail ${score ? 'has-tab' : ''}`}>
       <div className="detail-bar">
         <button className="link-button" onClick={onBack}>
           ‹ 목록
@@ -161,6 +169,8 @@ export default function SongDetail({ song, onBack, onEdit, onChange }: Props) {
         player={player}
         targetBpm={song.targetBpm}
         practiceBpm={song.practiceBpm}
+        zoom={zoom}
+        onZoomChange={setZoom}
       />
 
       {song.sheets.length > 0 ? (

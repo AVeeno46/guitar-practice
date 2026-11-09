@@ -308,6 +308,7 @@
 
 /* 기법 버튼 줄 */
 .pad-grid.tech {
+  grid-template-columns: repeat(4, 1fr);
   margin-bottom: 6px;
 }
 
@@ -323,4 +324,64 @@
 .pad-key.tech.on {
   border-color: var(--accent);
   color: var(--accent);
+}
+
+/* ---------- 쉼표 ---------- */
+
+.tab-rest {
+  fill: var(--text);
+}
+
+.tab-rest .stroke,
+.tab-rest.stroke {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- 악보 크기 ---------- */
+
+.tab-toolbar {
+  gap: 12px;
+}
+
+.tab-toolbar h3 {
+  margin-right: auto;
+}
+
+.zoom-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.zoom-control button {
+  width: 32px;
+  height: 30px;
+  border-radius: 8px;
+  background: none;
+  color: var(--text);
+  font-size: 18px;
+}
+
+.zoom-control button:disabled {
+  opacity: 0.3;
+}
+
+.zoom-control span {
+  min-width: 42px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 크게 키운 악보가 좁은 화면에서 넘치면 가로로 스크롤 */
+.tabstaff {
+  overflow-x: auto;
 }
