@@ -6,6 +6,7 @@ import type { PracticeSession } from './types';
 import { listSongs } from '../songs/db';
 import { todayKey, type BpmEntry, type Song } from '../songs/types';
 import { loadDrills } from '../basics/drillStore';
+import BackupBlock from './BackupBlock';
 import './practice.css';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -113,6 +114,8 @@ export default function Log() {
       />
 
       <BpmProgress songs={songs} refresh={practice.savedCount} />
+
+      <BackupBlock />
     </section>
   );
 }
