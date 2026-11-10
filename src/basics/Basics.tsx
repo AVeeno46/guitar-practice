@@ -3,19 +3,21 @@ import { loadLocal, saveLocal } from '../storage';
 import Scales from '../scales/Scales';
 import Chromatic from './Chromatic';
 import Spider from './Spider';
+import Picking from './Picking';
 import './basics.css';
 
-type Section = 'chromatic' | 'spider' | 'scales';
+type Section = 'chromatic' | 'spider' | 'picking' | 'scales';
 
 const SECTIONS: { id: Section; label: string }[] = [
   { id: 'chromatic', label: '크로매틱' },
   { id: 'spider', label: '스파이더' },
+  { id: 'picking', label: '피킹' },
   { id: 'scales', label: '스케일' },
 ];
 
 const KEY = 'gp.basicsSection';
 
-/** 기본기 탭: 크로매틱·스파이더(손가락 연습)와 스케일을 오간다. 앞으로 다른 기본기도 여기에 추가 */
+/** 기본기 탭: 크로매틱·스파이더(손가락), 피킹(오른손), 스케일을 오간다. 앞으로 다른 기본기도 여기에 추가 */
 export default function Basics() {
   const [section, setSection] = useState<Section>(() => loadLocal<{ id: Section }>(KEY, { id: 'chromatic' }).id);
 
@@ -39,7 +41,7 @@ export default function Basics() {
           </button>
         ))}
       </div>
-      {section === 'chromatic' ? <Chromatic /> : section === 'spider' ? <Spider /> : <Scales />}
+      {section === 'chromatic' ? <Chromatic /> : section === 'spider' ? <Spider /> : section === 'picking' ? <Picking /> : <Scales />}
     </div>
   );
 }
