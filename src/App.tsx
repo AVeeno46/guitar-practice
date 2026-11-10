@@ -4,6 +4,7 @@ import Songs from './songs/Songs';
 import Basics from './basics/Basics';
 import Log from './practice/Log';
 import PracticeBar from './practice/PracticeBar';
+import UpdateBanner from './update/UpdateBanner';
 import { usePracticeInteractionListener } from './practice/hooks';
 import './app.css';
 
@@ -28,6 +29,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <UpdateBanner />
       <header className="app-header">
         <h1>{current.label}</h1>
         <PracticeBar />

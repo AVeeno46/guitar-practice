@@ -13,6 +13,7 @@
 - [x] 기본기 › 스케일: 펜타토닉(마이너/메이저) 지판표, 5개 포지션 박스 테두리, 블루 노트, 음 누르면 소리, 미니 메트로놈
 - [ ] 코드 사전, 다른 스케일(메이저/마이너/모드)
 - [x] 데이터 백업: 기록 탭에서 곡·악보 파일·연습 기록·기본기 BPM·설정을 JSON 파일 하나로 내보내고 복원(지금 데이터와 합침), 마지막 백업 날짜 표시(14일 지나면 강조)
+- [x] 새 버전 알림: 새 배포가 있으면 탭바 위에 "새 버전이 있어요 · 새로고침" 표시 (앱이 다시 보일 때, 30분마다 확인)
 - [ ] Supabase로 기기 간 기록 동기화
 
 ## 데이터 저장
@@ -20,6 +21,7 @@
 - 메트로놈 설정: `localStorage` (`gp.metronome`)
 - 곡과 악보 파일, 연습 기록: IndexedDB `guitar-practice` (`songs`, `sheets`, `sessions` 저장소, v2). 폰 사진은 긴 변 2400px JPEG로 줄여 저장한다.
 - 진행 중인 연습: `localStorage` (`gp.activeSession`) — 새로고침해도 이어지고, 10분 넘게 닫혀 있었으면 닫힌 시점에 끝낸다.
+- 빌드 번호: `vite.config.ts`가 빌드마다 `dist/version.json`을 만들고 같은 값을 `__APP_BUILD__`로 코드에 넣는다. 서비스 워커는 `version.json`을 캐시하지 않는다.
 - 전체 백업 파일(`guitar-practice/backup` v1): IndexedDB 3개 저장소 + `gp.*` localStorage(`gp.activeSession`, `gp.lastBackup` 제외). 악보 파일은 base64. 복원 규칙: 같은 id의 곡은 `updatedAt`이 더 큰 쪽, 연습 기록은 없는 id만 추가, `gp.drills`는 날짜별로 합침, 나머지 설정은 백업 값.
 - PDF 악보는 pdf.js로 직접 그린다(iOS에서도 모든 쪽이 보이도록). pdf.js는 PDF를 처음 열 때만 불러온다.
 
