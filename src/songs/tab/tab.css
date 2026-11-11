@@ -426,3 +426,144 @@
   font-size: 9px;
   font-style: italic;
 }
+
+/* ---------- PC: 단축키 표시 ---------- */
+
+.pad-kbd,
+.shortcut-panel kbd {
+  display: inline-block;
+  min-width: 16px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.pad-key.tech .pad-kbd {
+  margin-left: 6px;
+  vertical-align: 1px;
+}
+
+.pad-key.tech.on .pad-kbd {
+  color: inherit;
+  border-color: currentColor;
+  background: transparent;
+}
+
+.tab-pad.pc .pad-grid.tech {
+  max-width: none;
+  grid-template-columns: repeat(7, auto);
+  justify-content: start;
+}
+
+.tab-pad.pc .pad-key.tech {
+  padding: 0 12px;
+}
+
+.pad-pc-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.pad-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.pad-mini:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.pad-mini.on {
+  color: var(--accent);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+
+.pad-note {
+  font-size: 12px;
+  color: var(--accent);
+}
+
+.pad-spacer {
+  flex: 1;
+}
+
+.tab-pad.pc .pad-grid:not(.tech) {
+  margin-top: 8px;
+}
+
+.shortcut-panel {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.shortcut-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.shortcut-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 6px 24px;
+}
+
+.shortcut-group {
+  margin: 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 10px;
+  align-content: start;
+}
+
+.shortcut-title {
+  grid-column: 1 / -1;
+  margin: 6px 0 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.shortcut-item {
+  display: contents;
+  font-size: 12.5px;
+}
+
+.shortcut-item dd {
+  font-size: 12.5px;
+  align-self: center;
+}
+
+.shortcut-item dt,
+.shortcut-item dd {
+  margin: 0;
+}
+
+.shortcut-item dd {
+  color: var(--muted);
+  line-height: 1.45;
+}

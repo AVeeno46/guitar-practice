@@ -204,6 +204,17 @@ export function toggleFlag(s: TabScore, col: number, string: number, flag: NoteF
   return setCell(s, col, string, next);
 }
 
+/** 복사해 둔 칸(음·P.M.)을 col에 붙인다. 쉼표·템포는 옮기지 않는다 */
+export function pasteColumn(s: TabScore, col: number, src: Column): TabScore {
+  const next = withColumn(s, col, (c) => {
+    c.notes = src.notes.map((n) => (n ? { ...n } : null));
+    if (src.pm) c.pm = true;
+    else delete c.pm;
+    return c;
+  });
+  return hasNotes(src) ? cutRestAt(next, col) : next;
+}
+
 export function togglePalmMute(s: TabScore, col: number): TabScore {
   return withColumn(s, col, (c) => {
     if (c.pm) delete c.pm;

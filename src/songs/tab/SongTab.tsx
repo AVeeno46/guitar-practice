@@ -10,6 +10,7 @@ import {
   duplicateBar,
   insertBar,
   midiOf,
+  pasteColumn,
   perBar,
   reshape,
   restCovering,
@@ -19,6 +20,7 @@ import {
   toggleFlag,
   togglePalmMute,
   toggleRest,
+  type Column,
   type NoteFlag,
   type NotesPerBeat,
   type TabScore,
@@ -58,6 +60,103 @@ const TECH_KEYS: Record<string, NoteFlag | 'pm' | 'rest'> = {
   r: 'rest',
 };
 const AUTO_ADVANCE_WAIT_MS = 900;
+
+/** 마우스·키보드가 있는 PC인지. PC에서는 화면 숫자 패드를 숨기고 키보드로 입력한다 */
+function usePointerFine() {
+  const query = '(hover: hover) and (pointer: fine)';
+  const [fine, setFine] = useState(() => typeof matchMedia === 'function' && matchMedia(query).matches);
+  useEffect(() => {
+    const mq = matchMedia(query);
+    const on = () => setFine(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  return fine;
+}
+
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
+const MOD = isMac ? '⌘' : 'Ctrl';
+
+/** 기법 버튼: [기법, 버튼 글자, 설명, 단축키] */
+const TECH_BUTTONS = [
+  ['dead', 'X', '뮤트음', 'X'],
+  ['tie', '(이음)', '앞 음 이어서 울림', 'T'],
+  ['legato', 'h/p', '해머링·풀링', 'H'],
+  ['slide', '슬라이드', '슬라이드', 'S'],
+  ['bend', '벤딩', '벤딩', 'B'],
+] as const;
+
+const SHORTCUTS: { title: string; items: [string, string][] }[] = [
+  {
+    title: '입력',
+    items: [
+      ['0 – 9', '프렛 번호 (1·2 다음 바로 숫자 → 두 자리, 예: 1 2 → 12)'],
+      ['Backspace / Del', '지우기'],
+      ['Space', '선택한 칸 소리 듣기'],
+    ],
+  },
+  {
+    title: '이동',
+    items: [
+      ['← →  /  Tab', '이전·다음 칸 (끝에서 →면 마디 추가)'],
+      ['↑ ↓', '위·아래 줄'],
+      [`${MOD} + ← →`, '이전·다음 마디'],
+      ['Home / End', '마디 처음·끝'],
+      ['A', '자동 이동 켜기/끄기 (숫자 입력 후 다음 칸으로)'],
+    ],
+  },
+  {
+    title: '기법',
+    items: [
+      ['X', '뮤트음'],
+      ['T', '(이음) 앞 음 이어서'],
+      ['H', '해머링·풀링'],
+      ['S', '슬라이드 (한 번 더: 슬라이드 아웃)'],
+      ['B', '벤딩'],
+      ['M', '팜뮤트 P.M.'],
+      ['R', '쉼표'],
+    ],
+  },
+  {
+    title: '편집',
+    items: [
+      [`${MOD} + C / V`, '칸 복사 / 붙여넣기 (한 칸의 모든 줄)'],
+      [`${MOD} + Z`, '되돌리기'],
+      ['?', '이 단축키 표 보기/숨기기'],
+      ['Esc', '편집 끝내기'],
+    ],
+  },
+];
+
+function ShortcutPanel({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="shortcut-panel" role="region" aria-label="키보드 단축키">
+      <div className="shortcut-head">
+        <strong>키보드 단축키</strong>
+        <button className="link-button" onClick={onClose}>
+          숨기기
+        </button>
+      </div>
+      <div className="shortcut-groups">
+        {SHORTCUTS.map((g) => (
+          <dl key={g.title} className="shortcut-group">
+            <dt className="shortcut-title">{g.title}</dt>
+            {g.items.map(([k, d]) => (
+              <div key={k} className="shortcut-item">
+                <dt>
+                  <kbd>{k}</kbd>
+                </dt>
+                <dd>{d}</dd>
+              </div>
+            ))}
+          </dl>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const SHORTCUT_KEY = 'gp.tabShortcuts';
 
 export default function SongTab(props: Props) {
   const { score, editing } = props;
@@ -206,6 +305,25 @@ function TabEditor({ score, onScoreChange, onEditingChange, zoom, onZoomChange }
   const [sel, setSel] = useState<Cell>({ col: 0, string: 0 });
   const [autoAdvance, setAutoAdvance] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const pc = usePointerFine();
+  const [showPad, setShowPad] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(() => {
+    try {
+      return localStorage.getItem(SHORTCUT_KEY) !== 'hidden';
+    } catch {
+      return true;
+    }
+  });
+  const toggleShortcuts = (on: boolean) => {
+    setShowShortcuts(on);
+    try {
+      localStorage.setItem(SHORTCUT_KEY, on ? 'shown' : 'hidden');
+    } catch {
+      // 기억 못 해도 괜찮다
+    }
+  };
+  const clipboard = useRef<Column | null>(null);
+  const [copied, setCopied] = useState(false);
   const history = useRef<TabScore[]>([]);
   const [canUndo, setCanUndo] = useState(false);
   const lastInput = useRef<{ col: number; string: number; time: number } | null>(null);
@@ -321,6 +439,39 @@ function TabEditor({ score, onScoreChange, onEditingChange, zoom, onZoomChange }
     commit(togglePalmMute(s, c.col));
   };
 
+  /** 칸 이동 (마디 단위·절대 위치) */
+  const jumpTo = (col: number) => {
+    clearAdvance();
+    lastInput.current = null;
+    const { score: sc, sel: c } = live.current;
+    const next = { col: Math.max(0, Math.min(sc.cols.length - 1, col)), string: c.string };
+    live.current.sel = next;
+    setSel(next);
+  };
+
+  const playColumn = () => {
+    const { score: sc, sel: c } = live.current;
+    sc.cols[c.col].notes.forEach((nt, str) => {
+      if (nt && !nt.dead) setTimeout(() => void pluck(midiOf(str, nt.fret)), str * 25);
+    });
+  };
+
+  const copyColumn = () => {
+    const { score: sc, sel: c } = live.current;
+    const src = sc.cols[c.col];
+    clipboard.current = { notes: src.notes.map((nt) => (nt ? { ...nt } : null)), ...(src.pm ? { pm: true } : {}) };
+    setCopied(true);
+  };
+
+  const pasteHere = () => {
+    if (!clipboard.current) return;
+    clearAdvance();
+    lastInput.current = null;
+    const { score: sc, sel: c } = live.current;
+    commit(pasteColumn(sc, c.col, clipboard.current));
+    if (autoAdvance) moveRight();
+  };
+
   const selectCell = (c: Cell) => {
     clearAdvance();
     lastInput.current = null;
@@ -332,13 +483,47 @@ function TabEditor({ score, onScoreChange, onEditingChange, zoom, onZoomChange }
 
   useEffect(() => clearAdvance, []);
 
-  // PC 키보드: 숫자, 화살표, Backspace/Delete, Ctrl+Z, Esc
+  // PC 키보드: 숫자, 화살표, 기법 글자, Ctrl+Z/C/V, Ctrl+←→, Home/End, Space, A, ?, Esc (SHORTCUTS 표 참고)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+      if (tempoSheet || showSettings) return; // 창이 떠 있으면 그 창의 입력
+      const mod = e.ctrlKey || e.metaKey;
+      const { score: sc, sel: c } = live.current;
+      const barStart = Math.floor(c.col / n) * n;
+      if (mod && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         undo();
+      } else if (mod && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        copyColumn();
+      } else if (mod && e.key.toLowerCase() === 'v') {
+        e.preventDefault();
+        pasteHere();
+      } else if (mod && e.key === 'ArrowRight') {
+        e.preventDefault();
+        if (barStart + n >= sc.cols.length) commit(insertBar(sc, barCount(sc) - 1));
+        jumpTo(barStart + n);
+      } else if (mod && e.key === 'ArrowLeft') {
+        e.preventDefault();
+        jumpTo(c.col === barStart ? barStart - n : barStart);
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        jumpTo(barStart);
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        jumpTo(barStart + n - 1);
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        playColumn();
+      } else if (e.key === '?') {
+        e.preventDefault();
+        toggleShortcuts(!showShortcuts);
+      } else if (!mod && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        setAutoAdvance((v) => !v);
+      } else if (mod || e.altKey) {
+        return; // 다른 브라우저 단축키는 그대로
       } else if (/^[0-9]$/.test(e.key)) {
         e.preventDefault();
         typeDigit(Number(e.key));
@@ -409,6 +594,8 @@ function TabEditor({ score, onScoreChange, onEditingChange, zoom, onZoomChange }
         </button>
       </div>
 
+      {pc && showShortcuts && <ShortcutPanel onClose={() => toggleShortcuts(false)} />}
+
       <TabStaff score={score} editing cursor={-1} selection={sel} loop={null} onCellTap={selectCell} zoom={zoom} />
 
       <p className="tab-help">
@@ -417,32 +604,51 @@ function TabEditor({ score, onScoreChange, onEditingChange, zoom, onZoomChange }
         쉼표는 빈 칸에서 누르면 다음 음 전까지 채워져요.
       </p>
 
-      {/* 아래에 붙어 있는 입력 패드 */}
-      <div className="tab-pad" role="group" aria-label="TAB 입력 패드">
+      {/* 아래에 붙어 있는 입력 패드. PC에서는 기법 줄만 (숫자·이동은 키보드로) */}
+      <div className={`tab-pad ${pc ? 'pc' : ''}`} role="group" aria-label="TAB 입력 패드">
         <div className="pad-grid tech">
-          {(
-            [
-              ['dead', 'X', '뮤트음'],
-              ['tie', '(이음)', '앞 음 이어서 울림'],
-              ['legato', 'h/p', '해머링·풀링'],
-              ['slide', '슬라이드', '슬라이드'],
-              ['bend', '벤딩', '벤딩'],
-            ] as const
-          ).map(([f, text, aria]) => {
+          {TECH_BUTTONS.map(([f, text, aria, key]) => {
             const on = !!selNote?.[f] || (f === 'slide' && !!selNote?.slideOut);
             return (
-              <button key={f} className={`pad-key tech ${on ? 'on' : ''}`} onClick={() => flag(f)} aria-label={aria} aria-pressed={on}>
+              <button key={f} className={`pad-key tech ${on ? 'on' : ''}`} onClick={() => flag(f)} aria-label={aria} aria-pressed={on} title={`${aria} (${key})`}>
                 {f === 'slide' && selNote?.slideOut ? '슬라이드 아웃' : text}
+                {pc && <kbd className="pad-kbd">{key}</kbd>}
               </button>
             );
           })}
-          <button className={`pad-key tech ${selColumn.pm ? 'on' : ''}`} onClick={palmMute} aria-label="팜뮤트" aria-pressed={!!selColumn.pm}>
+          <button className={`pad-key tech ${selColumn.pm ? 'on' : ''}`} onClick={palmMute} aria-label="팜뮤트" aria-pressed={!!selColumn.pm} title="팜뮤트 (M)">
             P.M.
+            {pc && <kbd className="pad-kbd">M</kbd>}
           </button>
-          <button className={`pad-key tech ${inRest ? 'on' : ''}`} onClick={rest} aria-label="쉼표" aria-pressed={inRest}>
+          <button className={`pad-key tech ${inRest ? 'on' : ''}`} onClick={rest} aria-label="쉼표" aria-pressed={inRest} title="쉼표 (R)">
             쉼표
+            {pc && <kbd className="pad-kbd">R</kbd>}
           </button>
         </div>
+        {pc && (
+          <div className="pad-pc-row">
+            <button className="pad-mini" onClick={undo} disabled={!canUndo} title={`되돌리기 (${MOD}+Z)`}>
+              ↶ 되돌리기 <kbd className="pad-kbd">{MOD}+Z</kbd>
+            </button>
+            <button className="pad-mini" onClick={clearCell} title="지우기 (Del)">
+              ✕ 지우기 <kbd className="pad-kbd">Del</kbd>
+            </button>
+            <button className={`pad-mini ${autoAdvance ? 'on' : ''}`} onClick={() => setAutoAdvance(!autoAdvance)} aria-pressed={autoAdvance} title="자동 이동 (A)">
+              자동 이동 {autoAdvance ? '켬' : '끔'} <kbd className="pad-kbd">A</kbd>
+            </button>
+            {copied && <span className="pad-note">칸 복사됨 · {MOD}+V로 붙여넣기</span>}
+            <span className="pad-spacer" />
+            {!showShortcuts && (
+              <button className="pad-mini" onClick={() => toggleShortcuts(true)}>
+                단축키 <kbd className="pad-kbd">?</kbd>
+              </button>
+            )}
+            <button className="pad-mini" onClick={() => setShowPad(!showPad)}>
+              {showPad ? '숫자 패드 숨기기' : '숫자 패드'}
+            </button>
+          </div>
+        )}
+        {(!pc || showPad) && (
         <div className="pad-grid">
           {[1, 2, 3, 4, 5].map((d) => (
             <button key={d} className="pad-key" onClick={() => typeDigit(d)}>
@@ -482,6 +688,7 @@ function TabEditor({ score, onScoreChange, onEditingChange, zoom, onZoomChange }
             이동
           </button>
         </div>
+        )}
       </div>
 
       {tempoSheet && (
