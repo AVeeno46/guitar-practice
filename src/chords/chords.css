@@ -1,0 +1,83 @@
+.chords {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.chord-voicings {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.chord-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 6px 10px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+
+.chord-card:active {
+  transform: scale(0.98);
+  border-color: var(--accent);
+}
+
+.chord-card-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.chord-diagram {
+  overflow: visible;
+}
+
+.cd-fret {
+  stroke: #5a5146;
+  stroke-width: 1.2;
+}
+
+.cd-nut {
+  stroke: var(--text);
+  stroke-width: 4;
+}
+
+.cd-string {
+  stroke: #8d8273;
+  stroke-width: 1.2;
+}
+
+.cd-start {
+  fill: var(--muted);
+  font-size: 11px;
+}
+
+.cd-mute {
+  fill: var(--muted);
+  font-size: 13px;
+}
+
+.cd-open {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1.4;
+}
+
+.cd-dot,
+.cd-barre {
+  fill: var(--accent);
+}
+
+.cd-finger {
+  fill: #1b1408;
+  font-size: 10px;
+  font-weight: 700;
+}
