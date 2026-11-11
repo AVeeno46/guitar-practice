@@ -5,11 +5,13 @@ import {
   RHYTHM_LABEL,
   STRING_NAMES,
   barCount,
+  copyBars,
   createScore,
   deleteBar,
   duplicateBar,
   insertBar,
   midiOf,
+  pasteBars,
   pasteColumn,
   perBar,
   reshape,
@@ -121,6 +123,7 @@ const SHORTCUTS: { title: string; items: [string, string][] }[] = [
     title: '편집',
     items: [
       [`${MOD} + C / V`, '칸 복사 / 붙여넣기 (한 칸의 모든 줄)'],
+      ['Shift + C / V', '마디 복사 / 붙여넣기 (마디 번호를 눌러 여러 마디 선택)'],
       [`${MOD} + Z`, '되돌리기'],
       ['?', '이 단축키 표 보기/숨기기'],
       ['Esc', '편집 끝내기'],
@@ -324,6 +327,10 @@ function TabEditor({ score, onScoreChange, onEditingChange, zoom, onZoomChange }
   };
   const clipboard = useRef<Column | null>(null);
   const [copied, setCopied] = useState(false);
+  /** 마디 번호를 눌러 고른 마디 범위 (복사용) */
+  const [barSel, setBarSel] = useState<{ from: number; to: number } | null>(null);
+  const [barClip, setBarClip] = useState<{ cols: Column[]; bars: number; label: string } | null>(null);
+  const [barMsg, setBarMsg] = useState<string | null>(null);
   const history = useRef<TabScore[]>([]);
   const [canUndo, setCanUndo] = useState(false);
   const lastInput = useRef<{ col: number; string: number; time: number } | null>(null);
@@ -472,6 +479,41 @@ function TabEditor({ score, onScoreChange, onEditingChange, zoom, onZoomChange }
     if (autoAdvance) moveRight();
   };
 
+  /** 마디 번호: 처음 누르면 그 마디, 다른 마디를 누르면 범위, 같은 마디를 다시 누르면 해제 */
+  const tapBarNumber = (b: number) => {
+    setBarMsg(null);
+    setBarSel((cur) => {
+      if (!cur || cur.from !== cur.to) return { from: b, to: b };
+      if (b === cur.from) return null;
+      return { from: Math.min(b, cur.from), to: Math.max(b, cur.from) };
+    });
+  };
+
+  const copyBarRange = () => {
+    const { score: sc, sel: c } = live.current;
+    const cur = Math.floor(c.col / n);
+    const range = barSel ?? { from: cur, to: cur };
+    const bars = range.to - range.from + 1;
+    const label = bars === 1 ? `${range.from + 1}마디` : `${range.from + 1}~${range.to + 1}마디`;
+    setBarClip({ cols: copyBars(sc, range.from, range.to), bars, label });
+    setBarMsg(`${label} 복사됨 · 붙일 마디로 가서 붙여넣기`);
+  };
+
+  const pasteBarRange = () => {
+    if (!barClip) return;
+    const { score: sc, sel: c } = live.current;
+    const at = Math.floor(c.col / n);
+    const next = pasteBars(sc, at, barClip.cols);
+    if (!next) {
+      setBarMsg('박자·리듬이 달라져서 붙일 수 없어요');
+      return;
+    }
+    commit(next);
+    const label = barClip.bars === 1 ? `${at + 1}마디` : `${at + 1}~${at + barClip.bars}마디`;
+    setBarMsg(`${barClip.label} → ${label}에 붙였어요`);
+    setBarSel(null);
+  };
+
   const selectCell = (c: Cell) => {
     clearAdvance();
     lastInput.current = null;
@@ -494,6 +536,12 @@ function TabEditor({ score, onScoreChange, onEditingChange, zoom, onZoomChange }
       if (mod && e.key.toLowerCase() === 'z') {
         e.preventDefault();
         undo();
+      } else if (!mod && e.shiftKey && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        copyBarRange();
+      } else if (!mod && e.shiftKey && e.key.toLowerCase() === 'v') {
+        e.preventDefault();
+        pasteBarRange();
       } else if (mod && e.key.toLowerCase() === 'c') {
         e.preventDefault();
         copyColumn();
@@ -549,7 +597,8 @@ function TabEditor({ score, onScoreChange, onEditingChange, zoom, onZoomChange }
         else if (k === 'rest') rest();
         else flag(k);
       } else if (e.key === 'Escape') {
-        onEditingChange(false);
+        if (barSel) setBarSel(null);
+        else onEditingChange(false);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -586,6 +635,18 @@ function TabEditor({ score, onScoreChange, onEditingChange, zoom, onZoomChange }
         <button className="scale-chip" onClick={() => barOp((s, b) => deleteBar(s, b), (s) => Math.min(sel.col, s.cols.length - 1))}>
           마디 삭제
         </button>
+        <button className="scale-chip" onClick={copyBarRange} title="마디 복사 (Shift+C)">
+          {barSel
+            ? barSel.from === barSel.to
+              ? `${barSel.from + 1}마디 복사`
+              : `${barSel.from + 1}~${barSel.to + 1}마디 복사`
+            : '마디 복사'}
+          {pc && <kbd className="pad-kbd">⇧C</kbd>}
+        </button>
+        <button className="scale-chip" onClick={pasteBarRange} disabled={!barClip} title="마디 붙여넣기 (Shift+V)">
+          {barClip ? `${barClip.label} 붙여넣기` : '붙여넣기'}
+          {pc && <kbd className="pad-kbd">⇧V</kbd>}
+        </button>
         <button className="scale-chip" onClick={() => setTempoSheet(true)}>
           템포 변경
         </button>
@@ -594,9 +655,25 @@ function TabEditor({ score, onScoreChange, onEditingChange, zoom, onZoomChange }
         </button>
       </div>
 
+      <p className="tab-help bar-copy-help">
+        {barMsg ??
+          (barSel
+            ? '복사할 마디를 골랐어요. 다른 마디 번호를 누르면 범위가 넓어지고, 같은 번호를 다시 누르면 취소돼요.'
+            : '마디 번호를 누르면 복사할 마디를 고를 수 있어요(두 번째로 누른 마디까지 범위). 고르지 않으면 커서가 있는 마디를 복사해요. 붙여넣기는 커서가 있는 마디부터 덮어써요.')}
+      </p>
+
       {pc && showShortcuts && <ShortcutPanel onClose={() => toggleShortcuts(false)} />}
 
-      <TabStaff score={score} editing cursor={-1} selection={sel} loop={null} onCellTap={selectCell} zoom={zoom} />
+      <TabStaff
+        score={score}
+        editing
+        cursor={-1}
+        selection={sel}
+        loop={barSel}
+        onCellTap={selectCell}
+        onBarTap={tapBarNumber}
+        zoom={zoom}
+      />
 
       <p className="tab-help">
         칸을 누르고 숫자를 입력해요. 같은 칸에서 1·2 다음 숫자를 바로 누르면 두 자리(예: 12). 한 칸에 여러 줄을 적으면 동시에 치는 음(코드)이에요.

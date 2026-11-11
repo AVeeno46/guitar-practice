@@ -567,3 +567,12 @@
   color: var(--muted);
   line-height: 1.45;
 }
+
+.tab-barops .scale-chip:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.tab-barops .scale-chip .pad-kbd {
+  margin-left: 6px;
+}

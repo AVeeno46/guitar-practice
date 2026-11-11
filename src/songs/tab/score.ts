@@ -253,6 +253,36 @@ export function duplicateBar(s: TabScore, bar: number): TabScore {
   return { ...s, cols: [...s.cols.slice(0, at), ...copy, ...s.cols.slice(at)] };
 }
 
+/** from~to 마디의 칸을 복사한다 (템포 표시는 빼고) */
+export function copyBars(s: TabScore, from: number, to: number): Column[] {
+  const n = perBar(s);
+  return s.cols.slice(from * n, (to + 1) * n).map((c) => {
+    const d = copyColumn(c);
+    delete d.tempo;
+    return d;
+  });
+}
+
+/**
+ * 복사한 마디들을 bar 마디부터 덮어쓴다. 마디가 모자라면 끝에 늘린다.
+ * 붙이는 자리에 있던 템포 표시는 그대로 둔다. 박자·리듬이 달라 칸 수가 안 맞으면 null.
+ */
+export function pasteBars(s: TabScore, bar: number, cols: Column[]): TabScore | null {
+  const n = perBar(s);
+  if (cols.length === 0 || cols.length % n !== 0) return null;
+  const start = bar * n;
+  const next = s.cols.slice();
+  while (next.length < start + cols.length) next.push(emptyColumn());
+  cols.forEach((c, k) => {
+    const d = copyColumn(c);
+    const tempo = next[start + k].tempo;
+    if (tempo) d.tempo = tempo;
+    else delete d.tempo;
+    next[start + k] = d;
+  });
+  return { ...s, cols: next };
+}
+
 /** 마디를 지운다. 마지막 한 마디는 지우지 않고 비운다 */
 export function deleteBar(s: TabScore, bar: number): TabScore {
   const n = perBar(s);
