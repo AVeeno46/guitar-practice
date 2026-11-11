@@ -321,3 +321,59 @@ export function normalizeScore(raw: unknown): TabScore | null {
   while (cols.length % n !== 0 || cols.length === 0) cols.push(emptyColumn());
   return { beatsPerBar, notesPerBeat: npb, tempo, cols };
 }
+
+// ---------- 박자 표시 (TAB 아래 기둥·꼬리) ----------
+
+/** 이 칸에서 음이 시작하는지 (이음·뮤트 포함) */
+export const isOnset = (c: Column) => c.notes.some((n) => n !== null);
+
+export interface RhythmNote {
+  col: number;
+  /** 다음 음·쉼표·마디 끝까지의 칸 수 */
+  slots: number;
+  /** 박 단위 길이 (4분음표 = 1) */
+  beats: number;
+  /** 0: 기둥 없음(온음표) / 'half': 짧은 기둥 / 1: 4분 / 꼬리·빔 수 1(8분)·2(16분) */
+  kind: 'whole' | 'half' | 'quarter' | 'eighth' | 'sixteenth';
+  dotted: boolean;
+}
+
+const VALUES: { beats: number; kind: RhythmNote['kind']; dotted: boolean }[] = [
+  { beats: 4, kind: 'whole', dotted: false },
+  { beats: 3, kind: 'half', dotted: true },
+  { beats: 2, kind: 'half', dotted: false },
+  { beats: 1.5, kind: 'quarter', dotted: true },
+  { beats: 1, kind: 'quarter', dotted: false },
+  { beats: 0.75, kind: 'eighth', dotted: true },
+  { beats: 0.5, kind: 'eighth', dotted: false },
+  { beats: 0.25, kind: 'sixteenth', dotted: false },
+];
+
+/**
+ * 음이 시작하는 칸마다 길이를 정한다. 길이는 다음 음이나 쉼표가 시작하는 칸까지(마디를 넘지 않음).
+ * 딱 맞는 음표가 없으면(16분 5칸 등) 그보다 짧은 가장 긴 음표로 보인다.
+ * 셋잇단(박당 3칸)은 한 칸을 8분음표 모양으로 그리고 묶음에 3을 붙인다.
+ */
+export function rhythmOf(s: TabScore): RhythmNote[] {
+  const n = s.notesPerBeat;
+  const bar = perBar(s);
+  const out: RhythmNote[] = [];
+  for (let i = 0; i < s.cols.length; i++) {
+    if (!isOnset(s.cols[i])) continue;
+    const barEnd = (Math.floor(i / bar) + 1) * bar;
+    let j = i + 1;
+    while (j < barEnd && !isOnset(s.cols[j]) && !s.cols[j].rest) j++;
+    const slots = j - i;
+    const beats = slots / n;
+    if (n === 3) {
+      // 셋잇단: 한 박을 다 채우지 않으면 8분(셋잇단) 모양
+      if (slots < 3) {
+        out.push({ col: i, slots, beats, kind: 'eighth', dotted: false });
+        continue;
+      }
+    }
+    const v = VALUES.find((x) => x.beats <= beats + 1e-9) ?? VALUES[VALUES.length - 1];
+    out.push({ col: i, slots, beats, kind: v.kind, dotted: v.dotted });
+  }
+  return out;
+}

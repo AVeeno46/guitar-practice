@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, type ReactElement } from 'react';
-import { STRING_COUNT, STRING_NAMES, barCount, nextNote, perBar, type Note, type TabScore } from './score';
+import { useEffect, useMemo, useRef, useState, type ReactElement } from 'react';
+import { STRING_COUNT, STRING_NAMES, barCount, nextNote, perBar, rhythmOf, type Note, type RhythmNote, type TabScore } from './score';
 
 export interface Cell {
   col: number;
@@ -26,6 +26,84 @@ const BAR_PAD = 8;
 const NUM_ROW = 18; // 마디 번호·템포 줄
 const MARK_ROW = 16; // P.M. 줄 (+ 벤딩 화살표 여유)
 const TOP = NUM_ROW + MARK_ROW + 6;
+const RHYTHM_H = 30; // TAB 아래 박자(기둥·꼬리) 줄
+const STEM = 17; // 4분·8분·16분음표 기둥 길이
+const BEAM_GAP = 4.2;
+
+/**
+ * TAB 아래 박자 표시. 한 박 안의 8분·16분음표는 빔으로 묶고, 혼자면 꼬리.
+ * 2분음표는 짧은 기둥, 온음표는 기둥 없음, 점음표는 점, 셋잇단 묶음에는 3.
+ */
+function RhythmMarks({
+  notes,
+  xOf,
+  y0,
+  npb,
+}: {
+  notes: RhythmNote[];
+  xOf: Map<number, number>;
+  y0: number;
+  npb: number;
+}) {
+  const out: ReactElement[] = [];
+  const end = y0 + STEM;
+  const level = (r: RhythmNote) => (r.kind === 'sixteenth' ? 2 : r.kind === 'eighth' ? 1 : 0);
+  const beamable = (r: RhythmNote) => level(r) > 0 && (npb === 3 || Math.floor(r.col / npb) === Math.floor((r.col + r.slots - 1) / npb));
+
+  // 기둥·점
+  for (const r of notes) {
+    const x = xOf.get(r.col)!;
+    if (r.kind !== 'whole') {
+      const y1 = r.kind === 'half' ? y0 + STEM * 0.5 : end;
+      out.push(<line key={`st${r.col}`} x1={x} x2={x} y1={y0} y2={y1} className="tab-stem" />);
+      if (r.dotted) out.push(<circle key={`d${r.col}`} cx={x + 4} cy={y0 + 4} r={1.5} className="tab-beam" />);
+    }
+  }
+
+  // 한 박 안에서 이어진 빔 묶음
+  const groups: RhythmNote[][] = [];
+  for (const r of notes) {
+    if (!beamable(r)) continue;
+    const last = groups[groups.length - 1];
+    const prev = last?.[last.length - 1];
+    const sameBeat = prev && Math.floor(prev.col / npb) === Math.floor(r.col / npb) && prev.col + prev.slots === r.col;
+    if (sameBeat) last.push(r);
+    else groups.push([r]);
+  }
+
+  for (const g of groups) {
+    const xs = g.map((r) => xOf.get(r.col)!);
+    if (g.length === 1) {
+      // 꼬리
+      for (let k = 0; k < level(g[0]); k++) {
+        const y = end - k * BEAM_GAP;
+        out.push(<path key={`f${g[0].col}-${k}`} d={`M${xs[0]},${y} q5,-1.5 6,-7`} className="tab-flag" />);
+      }
+    } else {
+      out.push(<rect key={`b${g[0].col}`} x={xs[0]} y={end - 2.4} width={xs[xs.length - 1] - xs[0]} height={2.4} className="tab-beam" />);
+      // 16분음표 둘째 빔: 이웃도 16분이면 이어 긋고, 혼자면 짧게
+      g.forEach((r, k) => {
+        if (level(r) < 2) return;
+        const y = end - 2.4 - BEAM_GAP;
+        if (k + 1 < g.length && level(g[k + 1]) >= 2) {
+          out.push(<rect key={`b2${r.col}`} x={xs[k]} y={y} width={xs[k + 1] - xs[k]} height={2.4} className="tab-beam" />);
+        } else if (!(k > 0 && level(g[k - 1]) >= 2)) {
+          const toLeft = k === g.length - 1;
+          const w = Math.min(6, (toLeft ? xs[k] - xs[k - 1] : xs[k + 1] - xs[k]) / 2);
+          out.push(<rect key={`b2${r.col}`} x={toLeft ? xs[k] - w : xs[k]} y={y} width={w} height={2.4} className="tab-beam" />);
+        }
+      });
+      if (npb === 3) {
+        out.push(
+          <text key={`t${g[0].col}`} x={(xs[0] + xs[xs.length - 1]) / 2} y={end + 8} textAnchor="middle" className="tab-tuplet">
+            3
+          </text>,
+        );
+      }
+    }
+  }
+  return <g className="tab-rhythm">{out}</g>;
+}
 
 function useWidth() {
   const ref = useRef<HTMLDivElement>(null);
@@ -149,7 +227,8 @@ export default function TabStaff({ score, editing, cursor, selection, loop, onCe
   const perRow = barsPerRow >= 1 ? barsPerRow * n : beatsPerRow * npb;
 
   const staffH = lineGap * (STRING_COUNT - 1);
-  const rowH = TOP + staffH + 12;
+  const rowH = TOP + staffH + 12 + RHYTHM_H;
+  const rhythm = useMemo(() => rhythmOf(score), [score]);
   const yOf = (string: number) => TOP + (STRING_COUNT - 1 - string) * lineGap;
   const fontSize = editing ? 13 : 12;
 
@@ -394,6 +473,14 @@ export default function TabStaff({ score, editing, cursor, selection, loop, onCe
             })}
 
             {marks}
+
+            {/* 박자: TAB 아래 기둥·꼬리 */}
+            <RhythmMarks
+              notes={rhythm.filter((rn) => xOf.has(rn.col))}
+              xOf={xOf}
+              y0={yOf(0) + lineGap * 0.6 + 2}
+              npb={npb}
+            />
 
             {/* 반복 구간: 숫자 위에 옅게 덮는다 */}
             {loop &&
