@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { loadLocal, saveLocal } from '../storage';
+import { useMemo } from 'react';
+import type { ScreenSettingsProps } from '../storage';
+import { useScreenSettings } from '../useScreenSettings';
 import DrillRunner, { ChoiceRow, PatternRow, StartFretRow } from './DrillRunner';
 import { DIRECTION_OPTIONS, NOTES_PER_BEAT_OPTIONS } from './drillOptions';
 import {
@@ -20,10 +21,8 @@ const STEP_OPTIONS: { value: SpiderStep; label: string }[] = [
   { value: 2, label: '두 줄씩' },
 ];
 
-export default function Spider() {
-  const [s, setS] = useState<SpiderSettings>(() => loadLocal(STORAGE_KEY, SPIDER_DEFAULTS));
-  useEffect(() => saveLocal(STORAGE_KEY, s), [s]);
-  const set = (patch: Partial<SpiderSettings>) => setS((prev) => ({ ...prev, ...patch }));
+export default function Spider(props: ScreenSettingsProps<SpiderSettings>) {
+  const [s, set] = useScreenSettings(STORAGE_KEY, SPIDER_DEFAULTS, props);
   const rounds = useMemo(() => spiderRounds(s), [s]);
 
   return (

@@ -24,21 +24,6 @@
   padding: 12px 20px calc(96px + env(safe-area-inset-bottom));
 }
 
-.coming-soon {
-  max-width: 420px;
-  margin: 15vh auto 0;
-  text-align: center;
-  color: var(--muted);
-  line-height: 1.6;
-}
-
-.coming-icon {
-  display: block;
-  font-size: 44px;
-  color: var(--accent);
-  margin-bottom: 12px;
-}
-
 .tabbar {
   position: fixed;
   left: 0;

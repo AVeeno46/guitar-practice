@@ -17,3 +17,12 @@ export function saveLocal<T>(key: string, value: T) {
     // 저장 공간이 없거나 막힌 경우 무시
   }
 }
+
+/**
+ * 연습 화면 설정. 평소엔 localStorage(key)에 저장하고,
+ * 루틴 안에서는 루틴 항목의 설정(initial)으로 시작해 바뀔 때마다 onChange로 루틴에 돌려준다.
+ */
+export interface ScreenSettingsProps<T> {
+  initial?: T;
+  onSettingsChange?: (settings: T) => void;
+}

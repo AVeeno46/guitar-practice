@@ -15,8 +15,8 @@ const VERSION = 1;
 
 const DRILLS_KEY = 'gp.drills';
 const LAST_BACKUP_KEY = 'gp.lastBackup';
-/** 기기마다 따로인 값: 진행 중인 연습, 마지막 백업 시각 */
-const SKIP_KEYS = new Set(['gp.activeSession', LAST_BACKUP_KEY]);
+/** 기기마다 따로인 값: 진행 중인 연습·루틴, 마지막 백업 시각 */
+const SKIP_KEYS = new Set(['gp.activeSession', 'gp.routineRun', LAST_BACKUP_KEY]);
 
 interface EncodedBlob {
   type: string;

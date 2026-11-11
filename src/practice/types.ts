@@ -29,6 +29,8 @@ export interface PracticeSession {
   memo: string;
   /** 메트로놈을 켜서 자동으로 시작된 연습 */
   auto: boolean;
+  /** 이 연습 중에 진행한 루틴 이름 */
+  routines?: string[];
 }
 
 export const FREE_ACTIVITY: Activity = { key: 'free', kind: 'free', label: '자유 연습' };

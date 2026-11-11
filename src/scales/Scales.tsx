@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import MiniMetronome from '../metronome/MiniMetronome';
-import { loadLocal, saveLocal } from '../storage';
+import type { ScreenSettingsProps } from '../storage';
+import { useScreenSettings } from '../useScreenSettings';
+import { SCALES_STORAGE_KEY, SCALE_DEFAULTS, scaleLabel, scaleName as scaleNameOf, type ScaleSettings } from './settings';
 import { usePracticeActivity } from '../practice/hooks';
 import Fretboard, { type LabelMode } from './Fretboard';
 import {
@@ -13,21 +15,6 @@ import {
   type ScaleType,
 } from './theory';
 import './scales.css';
-
-const STORAGE_KEY = 'gp.scales';
-
-interface ScaleSettings {
-  root: number; // 0..11 (C=0)
-  type: ScaleType;
-  position: number; // 0 = 전체, 1..5
-  labelMode: LabelMode;
-  blue: boolean;
-  outlines: boolean;
-  /** 스케일 연습용 BPM (곡 BPM, 메트로놈 탭 BPM과 따로 기억) */
-  bpm: number;
-}
-
-const DEFAULTS: ScaleSettings = { root: 9, type: 'minor', position: 0, labelMode: 'name', blue: false, outlines: true, bpm: 80 };
 
 const ROOTS = Array.from({ length: 12 }, (_, i) => i);
 const LABEL_MODES: { value: LabelMode; label: string }[] = [
@@ -49,30 +36,26 @@ function useVerticalBoard() {
   return vertical;
 }
 
-export default function Scales() {
-  const [settings, setSettings] = useState<ScaleSettings>(() => loadLocal(STORAGE_KEY, DEFAULTS));
+export default function Scales(props: ScreenSettingsProps<ScaleSettings>) {
+  const [settings, set] = useScreenSettings(SCALES_STORAGE_KEY, SCALE_DEFAULTS, props);
   const vertical = useVerticalBoard();
   const { root, type, position, labelMode, blue, outlines } = settings;
 
-  useEffect(() => saveLocal(STORAGE_KEY, settings), [settings]);
-
-  const set = (patch: Partial<ScaleSettings>) => setSettings((s) => ({ ...s, ...patch }));
 
   const notes = useMemo(() => scaleNotes(root, type, blue), [root, type, blue]);
   const allBoxes = useMemo(() => pentatonicBoxes(root, type), [root, type]);
   const boxes = position ? allBoxes.filter((b) => b.position === position) : null;
 
-  const def = SCALES[type];
   const ordered = [...notes.values()].sort(
     (a, b) => ((a.pc - root + 12) % 12) - ((b.pc - root + 12) % 12),
   );
   const relType: ScaleType = type === 'minor' ? 'major' : 'minor';
   const relRoot = relativeRoot(root, type);
-  const scaleName = `${rootLabel(root, type)} ${blue ? def.name.replace('펜타토닉', '블루스') : def.name}`;
+  const scaleName = scaleNameOf(settings);
   usePracticeActivity({
     key: `scale:${root}:${type}:${blue ? 'b' : ''}:${position}`,
     kind: 'scale',
-    label: position ? `${scaleName} · ${position}번 포지션` : scaleName,
+    label: scaleLabel(settings),
     bpm: settings.bpm,
   });
   const startFret = boxes?.[0] ? Math.min(...boxes[0].spans.map(([a]) => a)) : null;

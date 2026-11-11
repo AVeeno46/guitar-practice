@@ -30,6 +30,8 @@ interface ActiveSession {
   lastActive: number;
   items: Items;
   pending: Items;
+  /** 이 연습 중에 진행한 루틴 이름 */
+  routines?: string[];
 }
 
 export interface TrackerSnapshot {
@@ -188,6 +190,7 @@ async function finish(end: number, keepPending: boolean): Promise<PracticeSessio
     items: list,
     memo: '',
     auto: a.auto,
+    ...(a.routines?.length ? { routines: a.routines } : {}),
   };
   try {
     await saveSession(session);
@@ -212,6 +215,15 @@ export function startPractice(auto = false) {
 }
 
 /** '종료' 버튼. 저장된 연습(1분 미만이면 null)을 돌려준다. */
+/** 루틴을 진행하면 연습을 시작하고(이미 하고 있으면 이어서) 기록에 루틴 이름을 남긴다 */
+export function noteRoutine(name: string) {
+  if (!active) startPractice(false);
+  const a = active!;
+  if (!a.routines?.includes(name)) a.routines = [...(a.routines ?? []), name];
+  markActive();
+  persist();
+}
+
 export function stopPractice(): Promise<PracticeSession | null> {
   if (!active) return Promise.resolve(null);
   tick();

@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { loadLocal, saveLocal } from '../storage';
+import { useMemo } from 'react';
+import type { ScreenSettingsProps } from '../storage';
+import { useScreenSettings } from '../useScreenSettings';
 import DrillRunner, { ChoiceRow } from './DrillRunner';
 import { NOTES_PER_BEAT_OPTIONS } from './drillOptions';
 import {
@@ -37,10 +38,8 @@ const TIPS: Record<PickingKind, string> = {
     '사이 줄 하나를 건너 번갈아 쳐요. 가운데 줄을 건드리지 않게, 줄을 넘을 때도 피킹 방향을 다운·업 그대로 유지하세요.',
 };
 
-export default function Picking() {
-  const [s, setS] = useState<PickingSettings>(() => loadLocal(STORAGE_KEY, PICKING_DEFAULTS));
-  useEffect(() => saveLocal(STORAGE_KEY, s), [s]);
-  const set = (patch: Partial<PickingSettings>) => setS((prev) => ({ ...prev, ...patch }));
+export default function Picking(props: ScreenSettingsProps<PickingSettings>) {
+  const [s, set] = useScreenSettings(STORAGE_KEY, PICKING_DEFAULTS, props);
   const rounds = useMemo(() => pickingRounds(s), [s]);
 
   const strings = stringChoices(s.kind);

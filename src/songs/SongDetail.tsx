@@ -19,8 +19,10 @@ const PLAY_DEFAULTS: PlayOptions = { sound: true, click: true, clicks: 1, speedU
 
 interface Props {
   song: Song;
-  onBack: () => void;
-  onEdit: () => void;
+  /** 루틴 안에서 쓸 때는 목록·편집 버튼 없이 연습 화면만 */
+  embedded?: boolean;
+  onBack?: () => void;
+  onEdit?: () => void;
   onChange: (song: Song) => void;
 }
 
@@ -29,7 +31,7 @@ const formatDay = (date: string) => {
   return `${Number(m)}/${Number(d)}`;
 };
 
-export default function SongDetail({ song, onBack, onEdit, onChange }: Props) {
+export default function SongDetail({ song, embedded = false, onBack, onEdit, onChange }: Props) {
   const [saveError, setSaveError] = useState(false);
   usePracticeActivity({ key: `song:${song.id}`, kind: 'song', label: song.title, bpm: song.practiceBpm, refId: song.id });
   // 버튼을 빠르게 연달아 눌러도 직전 값에 이어서 계산하도록 최신 곡을 따로 들고 있는다
@@ -97,19 +99,21 @@ export default function SongDetail({ song, onBack, onEdit, onChange }: Props) {
 
   return (
     <section className={`song-detail ${score ? 'has-tab' : ''}`}>
-      <div className="detail-bar">
-        <button className="link-button" onClick={onBack}>
-          ‹ 목록
-        </button>
-        <span className="detail-bar-actions">
-          <button className="link-button" onClick={() => void exportSong(latest.current)}>
-            내보내기
+      {!embedded && (
+        <div className="detail-bar">
+          <button className="link-button" onClick={onBack}>
+            ‹ 목록
           </button>
-          <button className="link-button" onClick={onEdit}>
-            편집
-          </button>
-        </span>
-      </div>
+          <span className="detail-bar-actions">
+            <button className="link-button" onClick={() => void exportSong(latest.current)}>
+              내보내기
+            </button>
+            <button className="link-button" onClick={onEdit}>
+              편집
+            </button>
+          </span>
+        </div>
+      )}
 
       <div className="detail-head">
         <h2>{song.title}</h2>
@@ -181,7 +185,8 @@ export default function SongDetail({ song, onBack, onEdit, onChange }: Props) {
           ))}
         </div>
       ) : (
-        !editingTab && (
+        !editingTab &&
+        !embedded && (
           <p className="songs-empty small">
             종이 악보가 있다면 <button className="link-button inline" onClick={onEdit}>편집</button>에서 사진이나 PDF로 추가할 수도 있어요.
           </p>

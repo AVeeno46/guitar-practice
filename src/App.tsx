@@ -3,6 +3,7 @@ import Metronome from './metronome/Metronome';
 import Songs from './songs/Songs';
 import Basics from './basics/Basics';
 import Log from './practice/Log';
+import Routine from './routine/Routine';
 import PracticeBar from './practice/PracticeBar';
 import UpdateBanner from './update/UpdateBanner';
 import { usePracticeInteractionListener } from './practice/hooks';
@@ -17,10 +18,6 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: 'routine', label: '루틴', icon: '↻' },
   { id: 'log', label: '기록', icon: '▤' },
 ];
-
-const COMING_SOON: Record<Exclude<TabId, 'metronome' | 'songs' | 'basics' | 'log'>, string> = {
-  routine: '항목별 시간과 BPM을 정해 순서대로 진행하는 루틴 화면이 들어올 예정이에요.',
-};
 
 export default function App() {
   const [tab, setTab] = useState<TabId>('metronome');
@@ -45,10 +42,7 @@ export default function App() {
         ) : tab === 'log' ? (
           <Log />
         ) : (
-          <div className="coming-soon">
-            <span className="coming-icon">{current.icon}</span>
-            <p>{COMING_SOON[tab]}</p>
-          </div>
+          <Routine />
         )}
       </main>
 

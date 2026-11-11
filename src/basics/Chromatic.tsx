@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { loadLocal, saveLocal } from '../storage';
+import { useMemo } from 'react';
+import type { ScreenSettingsProps } from '../storage';
+import { useScreenSettings } from '../useScreenSettings';
 import {
   ALL_PATTERNS,
   CHROMATIC_DEFAULTS,
@@ -14,10 +15,8 @@ import { DIRECTION_OPTIONS, NOTES_PER_BEAT_OPTIONS } from './drillOptions';
 
 const STORAGE_KEY = 'gp.chromatic';
 
-export default function Chromatic() {
-  const [s, setS] = useState<ChromaticSettings>(() => loadLocal(STORAGE_KEY, CHROMATIC_DEFAULTS));
-  useEffect(() => saveLocal(STORAGE_KEY, s), [s]);
-  const set = (patch: Partial<ChromaticSettings>) => setS((prev) => ({ ...prev, ...patch }));
+export default function Chromatic(props: ScreenSettingsProps<ChromaticSettings>) {
+  const [s, set] = useScreenSettings(STORAGE_KEY, CHROMATIC_DEFAULTS, props);
   const rounds = useMemo(() => chromaticRounds(s), [s]);
 
   return (

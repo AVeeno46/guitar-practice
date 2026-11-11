@@ -1,0 +1,375 @@
+/* ---------- 목록 ---------- */
+
+.routine-list-screen,
+.routine-editor,
+.routine-run {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 640px;
+}
+
+.routine-card-item {
+  list-style: none;
+}
+
+.routine-summary {
+  gap: 10px;
+}
+
+.routine-mini {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.routine-summary-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.routine-start {
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #1b1408;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.routine-start:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ---------- 편집 ---------- */
+
+.routine-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.routine-item {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  grid-template-areas:
+    'no label'
+    'no controls';
+  align-items: center;
+  gap: 8px 10px;
+  padding: 12px 12px 10px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+
+.routine-item-no {
+  grid-area: no;
+  align-self: start;
+  color: var(--accent);
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.routine-item-label {
+  grid-area: label;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.routine-minutes,
+.routine-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.routine-item > .routine-minutes {
+  grid-area: controls;
+}
+
+.routine-item > .routine-item-actions {
+  grid-area: controls;
+  justify-self: end;
+}
+
+.routine-minutes-value {
+  min-width: 44px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.routine-minutes-value small {
+  margin-left: 1px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.routine-item-actions .icon-button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.routine-add {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.routine-add-title {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.routine-song-pick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px dashed var(--line);
+}
+
+.routine-danger,
+.routine-run-footer {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+}
+
+.routine-danger,
+.routine-stop-confirm {
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+
+.routine-stop-confirm {
+  display: flex;
+}
+
+.link-button.danger {
+  color: #f08a7a;
+}
+
+.link-button.muted-link {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ---------- 진행 ---------- */
+
+.routine-card,
+.routine-finish {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 20px;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  text-align: center;
+}
+
+.routine-card p,
+.routine-finish p,
+.routine-card h2,
+.routine-finish h2 {
+  margin: 0;
+}
+
+.routine-card-kicker {
+  font-size: 14px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.routine-card-next {
+  margin-top: 8px !important;
+  font-size: 13px;
+}
+
+.routine-card-title {
+  font-size: 21px;
+  line-height: 1.35;
+}
+
+.routine-card .song-add,
+.routine-finish .song-add {
+  margin-top: 10px;
+}
+
+.routine-step {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.routine-overview {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  counter-reset: step;
+}
+
+.routine-overview li {
+  counter-increment: step;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.routine-overview li::before {
+  content: counter(step);
+  width: 18px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.routine-overview li > span:first-of-type {
+  flex: 1;
+}
+
+.routine-overview li.done {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+.routine-overview li.current {
+  background: var(--surface-2);
+  font-weight: 600;
+}
+
+.routine-finish-icon {
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(232, 163, 61, 0.15);
+  color: var(--accent);
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.routine-finish .drill-tip {
+  margin-top: 4px;
+}
+
+/* 진행 막대: 연습 화면 위에 붙어 있다 */
+.routine-head {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: -6px -4px 0;
+  padding: 10px 14px 12px;
+  border-radius: 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.routine-head-top {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.routine-head-label {
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.routine-head-timer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.routine-remaining {
+  font-size: 34px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.5px;
+}
+
+.routine-remaining.paused {
+  color: var(--muted);
+  animation: routine-blink 1.2s steps(2, start) infinite;
+}
+
+@keyframes routine-blink {
+  to {
+    opacity: 0.4;
+  }
+}
+
+.routine-head-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.routine-ctrl {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 15px;
+}
+
+.routine-ctrl.main {
+  background: var(--accent);
+  color: #1b1408;
+  font-weight: 700;
+}
+
+.routine-ctrl:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.routine-free {
+  margin: 0;
+  padding: 24px 16px;
+  text-align: center;
+  line-height: 1.6;
+  border-radius: 14px;
+  border: 1px dashed var(--line);
+}
+
+.routine-free .muted {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+}

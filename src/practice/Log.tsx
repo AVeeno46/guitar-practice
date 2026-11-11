@@ -380,6 +380,11 @@ function SessionCard({
         </span>
         <span className="session-total">{formatDuration(session.seconds)}</span>
         {session.auto && <span className="session-tag">자동</span>}
+        {session.routines?.map((r) => (
+          <span key={r} className="session-tag routine">
+            루틴: {r}
+          </span>
+        ))}
       </div>
       <ul className="session-items">
         {session.items.map((i) => (
