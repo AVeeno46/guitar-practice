@@ -18,7 +18,7 @@ export const SCALE_DEFAULTS: ScaleSettings = { root: 9, type: 'minor', position:
 
 export function scaleName({ root, type, blue }: ScaleSettings): string {
   const def = SCALES[type];
-  return `${rootLabel(root, type)} ${blue ? def.name.replace('펜타토닉', '블루스') : def.name}`;
+  return `${rootLabel(root, type)} ${blue && def.blue ? def.name.replace('펜타토닉', '블루스') : def.name}`;
 }
 
 export function scaleLabel(s: ScaleSettings): string {

@@ -7,11 +7,15 @@ import { usePracticeActivity } from '../practice/hooks';
 import Fretboard, { type LabelMode } from './Fretboard';
 import {
   BOX_COLORS,
+  PENTATONIC_TYPES,
   SCALES,
-  pentatonicBoxes,
+  SEVEN_TYPES,
+  isPentatonic,
   relativeRoot,
   rootLabel,
+  scaleBoxes,
   scaleNotes,
+  validType,
   type ScaleType,
 } from './theory';
 import './scales.css';
@@ -39,18 +43,38 @@ function useVerticalBoard() {
 export default function Scales(props: ScreenSettingsProps<ScaleSettings>) {
   const [settings, set] = useScreenSettings(SCALES_STORAGE_KEY, SCALE_DEFAULTS, props);
   const vertical = useVerticalBoard();
-  const { root, type, position, labelMode, blue, outlines } = settings;
-
+  const { root, labelMode, outlines } = settings;
+  const type = validType(settings.type);
+  const penta = isPentatonic(type);
+  const blue = penta && settings.blue;
+  const def = SCALES[type];
+  const positionCount = def.intervals.length;
+  const position = settings.position <= positionCount ? settings.position : 0;
 
   const notes = useMemo(() => scaleNotes(root, type, blue), [root, type, blue]);
-  const allBoxes = useMemo(() => pentatonicBoxes(root, type), [root, type]);
+  const allBoxes = useMemo(() => scaleBoxes(root, type), [root, type]);
   const boxes = position ? allBoxes.filter((b) => b.position === position) : null;
 
   const ordered = [...notes.values()].sort(
     (a, b) => ((a.pc - root + 12) % 12) - ((b.pc - root + 12) % 12),
   );
-  const relType: ScaleType = type === 'minor' ? 'major' : 'minor';
+  // 같은 음을 쓰는 스케일: 펜타토닉은 마이너↔메이저, 7음은 메이저 스케일(메이저면 내추럴 마이너)
+  const relType: ScaleType = penta
+    ? type === 'minor'
+      ? 'major'
+      : 'minor'
+    : type === 'ionian'
+      ? 'aeolian'
+      : 'ionian';
   const relRoot = relativeRoot(root, type);
+
+  /** 펜타토닉 ↔ 7음을 바꿀 때 같은 느낌(마이너/메이저)으로 */
+  const switchFamily = (toPenta: boolean) => {
+    if (toPenta === penta) return;
+    const minorish = def.degrees.includes('♭3');
+    const next: ScaleType = toPenta ? (minorish ? 'minor' : 'major') : minorish ? 'aeolian' : 'ionian';
+    set({ type: next, position: 0 });
+  };
   const scaleName = scaleNameOf(settings);
   usePracticeActivity({
     key: `scale:${root}:${type}:${blue ? 'b' : ''}:${position}`,
@@ -79,31 +103,45 @@ export default function Scales(props: ScreenSettingsProps<ScaleSettings>) {
         </div>
 
         <div className="scale-row">
+          <span className="scale-row-title">음 수</span>
+          <div className="scale-chips">
+            <button className={`scale-chip wide ${penta ? 'selected' : ''}`} onClick={() => switchFamily(true)}>
+              펜타토닉 <span className="chip-sub">5음</span>
+            </button>
+            <button className={`scale-chip wide ${!penta ? 'selected' : ''}`} onClick={() => switchFamily(false)}>
+              메이저·마이너·모드 <span className="chip-sub">7음</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="scale-row">
           <span className="scale-row-title">종류</span>
           <div className="scale-chips">
-            {(['minor', 'major'] as const).map((t) => (
+            {(penta ? PENTATONIC_TYPES : SEVEN_TYPES).map((t) => (
               <button
                 key={t}
                 className={`scale-chip wide ${type === t ? 'selected' : ''}`}
-                onClick={() => set({ type: t })}
+                onClick={() => set({ type: t, ...(position > SCALES[t].intervals.length ? { position: 0 } : {}) })}
               >
-                {t === 'minor' ? '마이너' : '메이저'}
+                {SCALES[t].short}
               </button>
             ))}
-            <button
-              className={`scale-chip wide toggle ${blue ? 'on' : ''}`}
-              onClick={() => set({ blue: !blue })}
-              aria-pressed={blue}
-            >
-              + 블루 노트
-            </button>
+            {penta && (
+              <button
+                className={`scale-chip wide toggle ${blue ? 'on' : ''}`}
+                onClick={() => set({ blue: !blue })}
+                aria-pressed={blue}
+              >
+                + 블루 노트
+              </button>
+            )}
           </div>
         </div>
 
         <div className="scale-row">
           <span className="scale-row-title">포지션</span>
           <div className="scale-chips">
-            {[0, 1, 2, 3, 4, 5].map((p) => (
+            {Array.from({ length: positionCount + 1 }, (_, p) => p).map((p) => (
               <button
                 key={p}
                 className={`scale-chip ${position === p ? 'selected' : ''}`}
@@ -146,15 +184,22 @@ export default function Scales(props: ScreenSettingsProps<ScaleSettings>) {
         </h2>
         <ol className="scale-notes">
           {ordered.map((n) => (
-            <li key={n.pc} className={n.isRoot ? 'root' : n.isBlue ? 'blue' : ''}>
+            <li key={n.pc} className={n.isRoot ? 'root' : n.isBlue ? 'blue' : n.isFeature ? 'feature' : ''}>
               <span className="scale-note-name">{n.name}</span>
               <span className="scale-note-degree">{n.degree}</span>
             </li>
           ))}
         </ol>
         <p className="scale-tip">
+          {def.feature && (
+            <>
+              <strong className="scale-feature">특징음 {def.degrees[def.intervals.indexOf(def.feature.interval)]}</strong>
+              {' '}
+              {def.feature.text}.{' '}
+            </>
+          )}
           {rootLabel(relRoot, relType)} {SCALES[relType].name}과 같은 음이라 지판 모양도 같아요.
-          {' '}음을 누르면 소리가 나요.
+          {!penta && ' 포지션은 한 줄에 3음씩(3NPS) 치는 모양이에요.'} 음을 누르면 소리가 나요.
         </p>
       </div>
 
@@ -162,7 +207,7 @@ export default function Scales(props: ScreenSettingsProps<ScaleSettings>) {
         <Fretboard
           notes={notes}
           boxes={boxes}
-          outlines={outlines ? (boxes ?? allBoxes) : []}
+          outlines={outlines ? (boxes ?? (penta ? allBoxes : [])) : []}
           labelMode={labelMode}
           vertical={vertical}
         />

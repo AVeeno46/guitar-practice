@@ -174,7 +174,7 @@ export default function Fretboard({ notes, boxes, outlines, labelMode, vertical 
           const note = notes.get(pitchClassAt(s, f));
           if (!note) return null;
           const p = xy(fretCenter(f), across(s));
-          const kind = note.isRoot ? 'root' : note.isBlue ? 'blue' : 'tone';
+          const kind = note.isRoot ? 'root' : note.isBlue ? 'blue' : note.isFeature ? 'feature' : 'tone';
           const label = labelMode === 'name' ? note.name : labelMode === 'degree' ? note.degree : '';
           return (
             <g
