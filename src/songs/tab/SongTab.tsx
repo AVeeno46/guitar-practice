@@ -344,6 +344,22 @@ function TabEditor({ score, onScoreChange, onEditingChange, zoom, onZoomChange }
   const selColumn = score.cols[Math.min(sel.col, score.cols.length - 1)];
   const selNote = selColumn.notes[sel.string];
   const inRest = !!restCovering(score, Math.min(sel.col, score.cols.length - 1));
+  /** 선택한 칸에 적힌 것: '12프렛 · 벤딩', 'X', '(이음)', '쉼표', '비어 있음' */
+  const cellText = (() => {
+    if (selNote?.dead) return 'X 뮤트';
+    if (selNote?.tie) return '(이음)';
+    if (selNote) {
+      const tags = [
+        selNote.legato && 'h/p',
+        selNote.slide && '슬라이드',
+        selNote.slideOut && '슬라이드 아웃',
+        selNote.bend && '벤딩',
+      ].filter(Boolean);
+      return [`${selNote.fret}프렛`, ...tags].join(' · ');
+    }
+    if (inRest) return '쉼표';
+    return '비어 있음';
+  })();
   const [tempoSheet, setTempoSheet] = useState(false);
   const bar = Math.floor(sel.col / n);
   const beat = Math.floor((sel.col % n) / score.notesPerBeat);
@@ -623,9 +639,6 @@ function TabEditor({ score, onScoreChange, onEditingChange, zoom, onZoomChange }
       </div>
 
       <div className="tab-barops">
-        <span className="tab-selinfo">
-          {bar + 1}마디 · {beat + 1}박{score.notesPerBeat > 1 ? `-${sub + 1}` : ''} · {STRING_NAMES[sel.string]}줄
-        </span>
         <button className="scale-chip" onClick={() => barOp((s, b) => insertBar(s, b), () => (bar + 1) * n)}>
           + 마디
         </button>
@@ -683,6 +696,17 @@ function TabEditor({ score, onScoreChange, onEditingChange, zoom, onZoomChange }
 
       {/* 아래에 붙어 있는 입력 패드. PC에서는 기법 줄만 (숫자·이동은 키보드로) */}
       <div className={`tab-pad ${pc ? 'pc' : ''}`} role="group" aria-label="TAB 입력 패드">
+        <div className="pad-status" aria-live="polite">
+          <span className="tab-selinfo">
+            {bar + 1}마디 · {beat + 1}박{score.notesPerBeat > 1 ? `-${sub + 1}` : ''} · {STRING_NAMES[sel.string]}줄
+          </span>
+          <span className="pad-cell">{cellText}</span>
+          {barSel && (
+            <span className="pad-barsel">
+              {barSel.from === barSel.to ? `${barSel.from + 1}마디 선택` : `${barSel.from + 1}~${barSel.to + 1}마디 선택`}
+            </span>
+          )}
+        </div>
         <div className="pad-grid tech">
           {TECH_BUTTONS.map(([f, text, aria, key]) => {
             const on = !!selNote?.[f] || (f === 'slide' && !!selNote?.slideOut);

@@ -56,7 +56,6 @@
 }
 
 .tab-selinfo {
-  flex-basis: 100%;
   font-size: 13px;
   color: var(--accent);
   font-variant-numeric: tabular-nums;
@@ -575,4 +574,35 @@
 
 .tab-barops .scale-chip .pad-kbd {
   margin-left: 6px;
+}
+
+/* 패드 맨 위: 지금 고른 칸 */
+.pad-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  max-width: 520px;
+  margin: 0 auto 8px;
+  padding: 0 2px;
+}
+
+.tab-pad.pc .pad-status {
+  max-width: none;
+}
+
+.tab-pad .tab-selinfo {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.pad-cell {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.pad-barsel {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--muted);
 }
